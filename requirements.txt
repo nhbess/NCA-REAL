@@ -1,0 +1,6 @@
+numpy
+scipy
+matplotlib
+loguru
+shapely
+calfem-python
