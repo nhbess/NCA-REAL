@@ -50,12 +50,6 @@ class MultiSensoryTile:
 
         plt.gca().set_aspect('equal', adjustable='box')
         plt.show()
-
-    def test(self):
-        mt = MultiSensoryTile(1)
-        mt.plot()
-        mt.center = (100,100)
-        mt.plot()
         
 if __name__ == '__main__':
     pass
