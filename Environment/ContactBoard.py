@@ -36,7 +36,7 @@ class ContactBoard:
     def get_contact_mask(self, tetromino: WTetromino) -> np.array:
         contact_mask = np.zeros(self.board_shape, dtype=int)
         for tile in self.tiles:
-            if tetromino.polygon.buffer(1e-6).contains(tile.sensor):
+            if any(tetromino.polygon.buffer(1e-6).contains(sensor) for sensor in tile.sensors):
                 row_index = self.board_shape[0] - tile.matrix_position[1] - 1
                 col_index = tile.matrix_position[0]
                 contact_mask[row_index, col_index] = 1
@@ -51,10 +51,9 @@ class ContactBoard:
         if tetromino is not None:
             tetromino.plot()
 
-
         if tetromino and plot_density:
             DENSITY_CMAP = 'inferno'#'viridis'
-
+            
             ax = plt.subplot()
             circles_positions = tetromino.mass_points            
             
@@ -89,4 +88,8 @@ if __name__ == '__main__':
     cb.plot(tetromino=tetromino)
     cm = cb.get_contact_mask(tetromino)
     print(cm)
+    tetromino.rotate(-45)
+    cm = cb.get_contact_mask(tetromino)
+    print(cm)
+    
     pass

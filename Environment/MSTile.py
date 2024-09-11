@@ -3,7 +3,6 @@ import shapely.affinity
 import numpy as np
 from matplotlib import pyplot as plt
 
-
 class MultiSensoryTile:
     def __init__(self, tile_size:float = 1, sensor_number = 1) -> None:
         self.TS = tile_size
@@ -42,14 +41,13 @@ class MultiSensoryTile:
     def __str__(self) -> str:
         return (self.center, self.matrix_position)
 
-    def plot(self):
+    def plot(self, show = False) -> None:
         x, y = self.polygon.exterior.xy
         plt.plot(x, y, color='black')
         for sensor in self.sensors:
             plt.scatter(sensor.x, sensor.y, color='black', marker='x')
-
         plt.gca().set_aspect('equal', adjustable='box')
-        plt.show()
+        if show: plt.show()
         
 if __name__ == '__main__':
     pass

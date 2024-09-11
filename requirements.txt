@@ -4,3 +4,5 @@ matplotlib
 loguru
 shapely
 calfem-python
+PyQt5
+pandas

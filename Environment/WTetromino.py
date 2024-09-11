@@ -16,6 +16,9 @@ class WTetromino:
         self.__mass_points = Polygon(generate_points(shape, scaler))
 
     @property
+    def polygon(self) -> Polygon:
+        return self.__polygon
+    @property
     def center(self) -> tuple:
         center = self.__polygon.centroid.coords.xy
         return np.array([center[0][0], center[1][0]])
@@ -59,16 +62,14 @@ class WTetromino:
         self.__polygon = shapely.affinity.translate(self.__polygon, xoff=direction[0], yoff=direction[1], zoff=0.0)
         self.__mass_points = shapely.affinity.translate(self.__mass_points, xoff=direction[0], yoff=direction[1], zoff=0.0)
 
-    def plot(self) -> None:
+    def plot(self, show = False) -> None:
         x_values, y_values = zip(*self.vertices)
         plt.plot(x_values, y_values)  # Plot the vertices
         plt.plot(self.center[0],self.center[1], 'ro')  # Mark the first vertex with a red dot
-        #plt.scatter(self.mass_points[:,0], self.mass_points[:,1], c='black', alpha=0.5)
-        
+        #plt.scatter(self.mass_points[:,0], self.mass_points[:,1], c='black', alpha=0.5) 
         plt.gca().set_aspect('equal', adjustable='box')
-        plt.show()
+        if show: plt.show()
     
-
     
     def print_info(self) -> None:
         print('center: {}'.format(self.center))
