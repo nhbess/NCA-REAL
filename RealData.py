@@ -5,9 +5,9 @@ import numpy as np
 import ast
 import pickle
 
-def explore_data_path(data_path):
+def explore_data_path(data_path, which_data):
 
-    df = pd.DataFrame(columns=['shape', 'cm_x', 'cm_y', 'uncalibrated_records'])
+    df = pd.DataFrame(columns=['shape', 'cm_x', 'cm_y', 'values'])
     for root, dirs, files in os.walk(data_path):
         if files == []: continue
         if dirs != []: continue
@@ -15,17 +15,17 @@ def explore_data_path(data_path):
         try:
             shape = root[-4]
             cm_estimation = pd.read_csv(root + '/center_of_mass_estimate.csv')['CAMERA'].tolist()
-            uncalibrated_records = pd.read_csv(root + '/uncalibrated_sensor_data.csv').iloc[:, 1:].values.tolist()
+            records = pd.read_csv(root + f'/{which_data}.csv').iloc[:, 1:].values.tolist()
         except:
             print('Something wrong in ' + root)
             continue
       
 
         sub_data = {
-        'shape': [shape] * len(uncalibrated_records),
-        'cm_x': [cm_estimation[0]] * len(uncalibrated_records),
-        'cm_y': [cm_estimation[1]] * len(uncalibrated_records),
-        'uncalibrated_records': list(uncalibrated_records)
+        'shape': [shape] * len(records),
+        'cm_x': [cm_estimation[0]] * len(records),
+        'cm_y': [cm_estimation[1]] * len(records),
+        'values': list(records)
         }
 
         sub_df = pd.DataFrame(sub_data)
@@ -45,5 +45,6 @@ def explore_data_path(data_path):
 
 if __name__ == '__main__':
     data_path = 'Dataset'
-    explore_data_path(data_path)
+    which_data = 'calibrated_sensor_data_all_recordings'
+    explore_data_path(data_path, which_data)
     

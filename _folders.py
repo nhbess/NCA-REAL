@@ -1,19 +1,23 @@
-import os
-from loguru import logger
-import pickle
 import json
+import os
+import pickle
+
+import torch.nn as nn
+from loguru import logger
+
+import _config
 
 # DEFAULT FOLDER EXPERIMENT STRUCTURE
 DEFAULT_FOLDERS = {
-#    'MODELS': '__Models',
-#    'SIMULATIONS': '__Simulations',
-#    'VISUALIZATIONS': '__Visualizations',
-#    'RESULTS': '__Results',
+    'MODELS': '__Models',
+    #'SIMULATIONS': '__Simulations',
+    'VISUALIZATIONS': '__Visualizations',
+    'RESULTS': '__Results',
 }
 
 # FOLDER PATHS
 MODELS_PATH =           None
-SIMULATIONS_PATH =      None
+#SIMULATIONS_PATH =      None
 VISUALIZATIONS_PATH =   None
 RESULTS_PATH =          None
 
@@ -48,8 +52,45 @@ def set_experiment_folders(experiment_name:str):
 
     _set_folders({
         'MODELS': f'{experiment_name}/{MODELS_PATH}',
-        'SIMULATIONS': f'{experiment_name}/{SIMULATIONS_PATH}',
+        #'SIMULATIONS': f'{experiment_name}/{SIMULATIONS_PATH}',
         'VISUALIZATIONS': f'{experiment_name}/{VISUALIZATIONS_PATH}',
         'RESULTS': f'{experiment_name}/{RESULTS_PATH}',
     })
     _create_folders()
+
+
+
+def save_model(trained_model:nn.Module, experiment_name:str ) -> None:
+    path = f'{MODELS_PATH}/{experiment_name}.pkl'
+    logger.info(f"Saving model to path {path}")
+    with open(path, 'wb') as handle:
+        pickle.dump(trained_model, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+def load_model(experiment_name:str) -> nn.Module:
+    path = f'{MODELS_PATH}/{experiment_name}.pkl'
+    logger.info(f"Loading model from path {path}")
+    with open(path, 'rb') as handle:
+        model = pickle.load(handle)
+    return model
+
+def save_training_results(data, experiment_name):
+    results = {'training_parameters': _config.training_parameters(),}
+    results.update(data)
+
+    result_path = os.path.join(RESULTS_PATH, f'{experiment_name}.json')
+    print(f"Saving training results to path {result_path}")
+    with open(result_path, 'w') as json_file:
+        json.dump(results, json_file)
+
+def save_training_plot(data, experiment_name):
+    import matplotlib.pyplot as plt
+    data = data['training_results']
+    loss = [x['loss'] for x in data]
+    y = range(len(loss))
+    plt.plot(y, loss)
+    plt.xlabel('Training Step')
+    plt.ylabel('Loss')
+    plt.yscale('log')
+    image_path = os.path.join(VISUALIZATIONS_PATH, f'{experiment_name}.png')
+    plt.savefig(image_path)
+    plt.show()

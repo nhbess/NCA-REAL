@@ -6,3 +6,5 @@ shapely
 calfem-python
 PyQt5
 pandas
+torch
+tqdm
