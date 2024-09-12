@@ -29,7 +29,7 @@ def run_block(state_structure:StateStructure, data:np.array, files_name:str, see
 def some_visuals(experiment_name:str, data:np.array):
     #load model
     model = _folders.load_model(experiment_name).eval()
-
+    print(len(data))
     CMX = data[:,1]
     CMY = data[:,2]
     VALUES = np.vstack(data[:,-1])
