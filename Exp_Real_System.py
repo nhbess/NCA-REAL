@@ -67,11 +67,16 @@ def some_visuals(experiment_name:str, data:np.array):
         board.plot()
         estimation_x = estimation[0].flatten()
         estimation_y = estimation[1].flatten()
-
+        mestx = np.mean(estimation_x)
+        mesty = np.mean(estimation_y)
         ax.scatter(estimation_x, estimation_y, c='orange', marker='x', label='Estimation')
         ax.scatter(cmx, cmy, c='blue', marker='x', label='Real')
-        ax.scatter(np.mean(estimation_x), np.mean(estimation_y), c='red', marker='x', label='Mean Estimation')
+        ax.scatter(mestx, mesty, c='red', marker='x', label='Mean Estimation')
 
+        #draw and arrow from the real to the mean estimation
+        ax.arrow(cmx, cmy, mestx-cmx, mesty-cmy, head_width=0.1, head_length=0.1, fc='grey', ec='grey')
+        #draw text with the distance between the real and the mean estimation
+        ax.text(cmx + (mestx-cmx)/2, cmy + (mesty-cmy)/2, f'{np.linalg.norm([mestx-cmx, mesty-cmy]):.2f} mm', fontsize=12, color='black')
         # Convert the figure to a NumPy array
         #label
         ax.legend()
