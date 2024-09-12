@@ -12,6 +12,7 @@ DEFAULT_PARAMETERS = {
         'NUM_MOVEMENTS' :   10,
         'NEIGHBORHOOD' :    'Chebyshev',
         'DEAD_PERCENTAGE' : [0,25], # %
+        'TILE_SIZE' :       37.5, #milimeters
     }
 
 LEARNING_RATE =     None
@@ -26,6 +27,7 @@ UPDATE_STEPS =      None
 NUM_MOVEMENTS =     None
 NEIGHBORHOOD =      None
 DEAD_PERCENTAGE =   None
+TILE_SIZE =         None
 
 def training_parameters() -> dict:
     data = {}

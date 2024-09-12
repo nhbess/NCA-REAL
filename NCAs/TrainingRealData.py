@@ -9,8 +9,8 @@ from torch.optim.lr_scheduler import MultiStepLR
 import _config
 from ResultsHandler import ResultsHandler
 from StateStructure import StateStructure
-from Util import create_initial_states, get_target_tensor, moving_contact_masks
 from tqdm import tqdm
+from Environment.ContactBoard import ContactBoard
 
 class TrainerRealData:
     def __init__(self, data:np.array) -> None:
@@ -34,12 +34,20 @@ class TrainerRealData:
 
         return loss, batch_losses_list
     
-
-    def _create_training_batch(self, x:np.array,y:np.array,s:np.array):
-        contact_masks = torch.zeros(_config.BATCH_SIZE, *_config.BOARD_SHAPE)
-        print(contact_masks.shape)
+    
+    def create_initial_states(self, n_states:int, state_structure:StateStructure, X:np.array,Y:np.array) -> torch.Tensor:
+        '''
+        Return a tensor of shape [n_states, state_dim, board_shape[0], board_shape[1]].
+        With constant values in the constant channels, and the coordinates in the estimation channels.
+        '''
+        pool = torch.zeros(n_states, state_structure.state_dim, _config.BOARD_SHAPE[0], _config.BOARD_SHAPE[1])
+        x = torch.from_numpy(X)
+        y = torch.from_numpy(Y)
         
-        pass
+        pool[..., state_structure.constant_channels, :, :] = torch.stack([x, y], dim=0)
+        pool[..., state_structure.estimation_channels, :, :] = torch.stack([x, y], dim=0)
+        
+        return pool
 
     def train_center_finder(self, model:nn.Module, state_structure:StateStructure, experiment_name:str = None) -> nn.Module:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -48,7 +56,11 @@ class TrainerRealData:
         model = model.to(device)
         optimizer = torch.optim.Adam(params=model.parameters(), lr=_config.LEARNING_RATE, weight_decay=_config.WEIGHT_DECAY)
         scheduler = MultiStepLR(optimizer=optimizer, milestones=_config.MILESTONES, gamma=_config.GAMMA)
-        pool = create_initial_states(_config.POOL_SIZE, state_structure, _config.BOARD_SHAPE).to(device)        
+        
+        
+        board = ContactBoard(board_shape=_config.BOARD_SHAPE, tile_size=_config.TILE_SIZE, center=(0,0))
+        X_pos,Y_pos = board.sensor_positions
+        pool = self.create_initial_states(n_states=_config.POOL_SIZE, state_structure=state_structure, X=X_pos, Y=Y_pos).to(device)        
         
         logger.info(f"Training for {_config.TRAINING_STEPS} epochs")
         self.rh.set_training_start()
@@ -73,8 +85,6 @@ class TrainerRealData:
             y = Y[indexes]
             s = np.array([np.reshape(i, _config.BOARD_SHAPE) for i in S[indexes]])
             
-
-            
             total_batch_losses_list = []
             total_losses = []
                             
@@ -82,12 +92,7 @@ class TrainerRealData:
                 
                 input_states[..., state_structure.sensor_channels, :, :] = torch.from_numpy(s[state])
                 sensor_states = input_states[..., state_structure.sensor_channels, :, :]
-                #constant_states = input_states[..., state_structure.constant_channels, :, :]
-
-                #target_states = get_target_tensor(sensor_states, constant_states).to(device)
-                #print(f'target state shape: {target_states.shape}')
-
-
+                
                 N, _, H, W = sensor_states.shape
                 target_states = torch.ones(N, 2, H, W)
                 for i in range(N):
@@ -98,7 +103,7 @@ class TrainerRealData:
 
 
                 #TODO: DO I need dead mask here in the forward pass how does it work since I am passing not a single but BatchSize things?
-                states:torch.Tensor = model(input_states, np.random.randint(*_config.UPDATE_STEPS), return_frames=True, dead_mask=None)
+                states:torch.Tensor = model(input_states, np.random.randint(*_config.UPDATE_STEPS), return_frames=True)
                 sensible_states = states[...,state_structure.estimation_channels, :, :] 
                          
                 mov_loss, mov_batch_losses_list = self._loss_center_finder_all_frames(target_states, sensible_states, sensor_states)
@@ -117,7 +122,7 @@ class TrainerRealData:
             
             indexes_to_replace = torch.argsort(total_batch_losses_list, descending=True)[:int(.15*_config.BATCH_SIZE)]
             final_states = states.detach()[-1]
-            empty_states = create_initial_states(len(indexes_to_replace), state_structure, _config.BOARD_SHAPE).to(device)
+            empty_states = self.create_initial_states(len(indexes_to_replace), state_structure, X=X_pos, Y=Y_pos).to(device)
             final_states[indexes_to_replace] = empty_states
             pool[pool_indexes] = final_states
 
@@ -134,3 +139,6 @@ class TrainerRealData:
         logger.info(f"Finished training model on {device}")
         trained_model = copy.deepcopy(model.cpu())
         return trained_model
+    
+if __name__ == '__main__':
+    pass

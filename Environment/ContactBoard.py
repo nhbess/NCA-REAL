@@ -6,26 +6,61 @@ from shapely.geometry import Polygon, Point
 from DensityMetrics import DensityMetrics
 
 class ContactBoard:
-    def __init__(self, board_shape) -> None:
+    def __init__(self, board_shape: list, tile_size: float, center: tuple = (0, 0)) -> None:
+        self.tile_size = tile_size
         self.board_shape = board_shape
+        self.center = np.array(center)
         self.tiles = self._create_tiles()
         self.contour = self._create_contour()
 
-    def _create_contour(self) -> np.array:
-        contour_vertices = [(0,0), (0, self.board_shape[0]), (self.board_shape[1], self.board_shape[0]), (self.board_shape[1], 0)]
-        contour_vertices = [(point[0] - 0.5, point[1] - 0.5) for point in contour_vertices]
+    def _create_contour(self) -> Polygon:
+        """Create the contour of the board as a polygon based on the board's center."""
+        half_width = self.board_shape[1] * self.tile_size / 2
+        half_height = self.board_shape[0] * self.tile_size / 2
+        contour_vertices = [
+            (self.center[0] - half_width, self.center[1] - half_height),
+            (self.center[0] - half_width, self.center[1] + half_height),
+            (self.center[0] + half_width, self.center[1] + half_height),
+            (self.center[0] + half_width, self.center[1] - half_height)
+        ]
         contour = Polygon(contour_vertices)
         return contour
-    
-    def _create_tiles(self) -> None:
+
+    def _create_tiles(self) -> list:
+        """Create tiles and arrange them in a grid pattern based on the board's center."""
         tiles = []
-        for i in range(self.board_shape[0]):
-            for j in range(self.board_shape[1]):
-                tile = MultiSensoryTile(1)
-                tile.center = np.array([j, i])
+        half_width = self.board_shape[1] * self.tile_size / 2
+        half_height = self.board_shape[0] * self.tile_size / 2
+        for i in range(self.board_shape[0]):  # Loop over rows
+            for j in range(self.board_shape[1]):  # Loop over columns
+                tile = MultiSensoryTile(tile_size=self.tile_size, sensor_number=1)
+                # Set the tile's center based on the board's center and tile size
+                tile_center_x = self.center[0] - half_width + (j + 0.5) * self.tile_size
+                tile_center_y = self.center[1] - half_height + (i + 0.5) * self.tile_size
+                tile.center = np.array([tile_center_x, tile_center_y])
                 tile.matrix_position = np.array([j, i])
                 tiles.append(tile)
         return tiles
+
+    @property
+    def center(self) -> tuple:
+        return self._center
+
+    @center.setter
+    def center(self, new_center: tuple) -> None:
+        """Update the board center and recompute the tiles and contour."""
+        self._center = np.array(new_center)
+        self.tiles = self._create_tiles()  # Recreate tiles with new center
+        self.contour = self._create_contour()  # Recreate contour with new center
+
+    @property
+    def sensor_positions(self) -> list:
+        X = [sensor.x for tile in self.tiles for sensor in tile.sensors]
+        Y = [sensor.y for tile in self.tiles for sensor in tile.sensors]
+        X = np.array(X, dtype=float).reshape(self.board_shape)
+        Y = np.array(Y, dtype=float).reshape(self.board_shape)
+        return X,Y
+
 
     def has_tetromino_inside(self, tetromino: WTetromino) -> bool:
             return self.contour.contains(tetromino.polygon)
@@ -42,12 +77,12 @@ class ContactBoard:
                 contact_mask[row_index, col_index] = 1
         return contact_mask
 
-    def plot(self, tetromino: WTetromino = None, plot_density = True) -> None:
+    def plot(self, tetromino: WTetromino = None, plot_density = False) -> None:
         for tile in self.tiles:
             tile.plot()
         #plot contour
         x, y = self.contour.exterior.xy
-        #plt.plot(x, y, color='red', linestyle='dashed')
+        plt.plot(x, y, color='red', linestyle='dashed')
         if tetromino is not None:
             tetromino.plot()
 
@@ -72,24 +107,14 @@ class ContactBoard:
 
 
         #remove axis
-        plt.xticks([])
-        plt.yticks([])
+        #plt.xticks([])
+        #plt.yticks([])
         plt.tight_layout()
         plt.gca().set_aspect('equal', adjustable='box')
         #save
         plt.savefig('all.png', dpi=600, bbox_inches='tight')
-        plt.show()
+        #plt.show()
+
 
 if __name__ == '__main__':
-    cb = ContactBoard([4,4])
-    tetromino = WTetromino(shape='T', scaler=1)
-    tetromino.center = np.array([1.5, 1.5])
-    tetromino.rotate(-45)
-    cb.plot(tetromino=tetromino)
-    cm = cb.get_contact_mask(tetromino)
-    print(cm)
-    tetromino.rotate(-45)
-    cm = cb.get_contact_mask(tetromino)
-    print(cm)
-    
     pass
