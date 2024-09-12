@@ -82,7 +82,7 @@ class ContactBoard:
             tile.plot()
         #plot contour
         x, y = self.contour.exterior.xy
-        plt.plot(x, y, color='red', linestyle='dashed')
+        #plt.plot(x, y, color='red', linestyle='dashed')
         if tetromino is not None:
             tetromino.plot()
 
@@ -112,7 +112,7 @@ class ContactBoard:
         plt.tight_layout()
         plt.gca().set_aspect('equal', adjustable='box')
         #save
-        plt.savefig('all.png', dpi=600, bbox_inches='tight')
+        #plt.savefig('all.png', dpi=600, bbox_inches='tight')
         #plt.show()
 
 

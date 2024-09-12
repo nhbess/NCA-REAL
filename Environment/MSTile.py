@@ -52,10 +52,10 @@ class MultiSensoryTile:
     def plot(self, show=False) -> None:
         """Plot the tile and its sensors."""
         x, y = self.polygon.exterior.xy
-        plt.plot(x, y, color='black')
+        plt.plot(x, y, color='grey')
         # Plot the sensors
         for sensor in self.sensors:
-            plt.scatter(sensor.x, sensor.y, color='red', marker='x')
+            plt.scatter(sensor.x, sensor.y, color='grey', marker='o')
         # Ensure aspect ratio is equal
         plt.gca().set_aspect('equal', adjustable='box')
         if show:

@@ -8,3 +8,4 @@ PyQt5
 pandas
 torch
 tqdm
+imageio

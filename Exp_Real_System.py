@@ -54,12 +54,38 @@ def some_visuals(experiment_name:str, data:np.array):
     print(estimation_states.shape)
 
     steps = estimation_states.shape[0]
+    import matplotlib.pyplot as plt
+    import imageio
+    frames = []
     for i in range(steps):
         estimation = estimation_states[i].detach().cpu().numpy()
-        print(estimation)
-        sys.exit()
-    
-    print(f"Real: {cmx, cmy}")
+        
+        # Create a new figure for each frame
+        fig, ax = plt.subplots()
+        
+        # Plot your board and estimation
+        board.plot()
+        estimation_x = estimation[0].flatten()
+        estimation_y = estimation[1].flatten()
+
+        ax.scatter(estimation_x, estimation_y, c='orange', marker='x', label='Estimation')
+        ax.scatter(cmx, cmy, c='blue', marker='x', label='Real')
+        ax.scatter(np.mean(estimation_x), np.mean(estimation_y), c='red', marker='x', label='Mean Estimation')
+
+        # Convert the figure to a NumPy array
+        #label
+        ax.legend()
+        fig.canvas.draw()
+        frame = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        frame = frame.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        frames.append(frame)
+
+        # Close the figure to free memory
+        plt.close(fig)
+
+    # Create a GIF from the list of frames
+    name = np.random.randint(0,1000)
+    imageio.mimsave(f'{name}.gif', frames, fps=60)
 
 if __name__ == '__main__':
 
