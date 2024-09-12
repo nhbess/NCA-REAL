@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from loguru import logger
-
+import _config
 import Environment.Shapes as Shapes
 from Environment.ContactBoard import ContactBoard
 from Environment.Tetromino import Tetromino
@@ -128,6 +128,19 @@ def get_target_tensor(sensor_states: torch.Tensor, constant_states: torch.Tensor
 
     return target_tensor
 
+def create_initial_states_real_data(n_states:int, state_structure:StateStructure, X:np.array,Y:np.array) -> torch.Tensor:
+        '''
+        Return a tensor of shape [n_states, state_dim, board_shape[0], board_shape[1]].
+        With constant values in the constant channels, and the coordinates in the estimation channels.
+        '''
+        pool = torch.zeros(n_states, state_structure.state_dim, _config.BOARD_SHAPE[0], _config.BOARD_SHAPE[1])
+        x = torch.from_numpy(X)
+        y = torch.from_numpy(Y)
+        
+        pool[..., state_structure.constant_channels, :, :] = torch.stack([x, y], dim=0)
+        pool[..., state_structure.estimation_channels, :, :] = torch.stack([x, y], dim=0)
+        
+        return pool
 
 if __name__ == '__main__':
     pass

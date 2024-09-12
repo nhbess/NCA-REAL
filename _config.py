@@ -1,8 +1,8 @@
 # TRAINING PARAMETERS
 DEFAULT_PARAMETERS = {
-        'LEARNING_RATE' :   2e-3,
+        'LEARNING_RATE' :   1e-3,
         'WEIGHT_DECAY' :    0,
-        'MILESTONES' :      [3000, 6000, 8000],
+        'MILESTONES' :      [1500, 3000, 8000],
         'GAMMA' :           1,
         'BOARD_SHAPE' :     [3,3],
         'BATCH_SIZE' :      8,

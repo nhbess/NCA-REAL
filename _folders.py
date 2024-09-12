@@ -90,7 +90,7 @@ def save_training_plot(data, experiment_name):
     plt.plot(y, loss)
     plt.xlabel('Training Step')
     plt.ylabel('Loss')
-    plt.yscale('log')
+    #plt.yscale('log')
     image_path = os.path.join(VISUALIZATIONS_PATH, f'{experiment_name}.png')
     plt.savefig(image_path)
     plt.show()
