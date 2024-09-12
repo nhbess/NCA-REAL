@@ -62,9 +62,12 @@ def some_visuals(experiment_name:str, data:np.array):
         
         # Create a new figure for each frame
         fig, ax = plt.subplots()
-        
+
         # Plot your board and estimation
-        board.plot()
+        #board.plot()
+        ax.imshow(values, cmap='viridis', alpha=0.9, extent=[-board.tile_size*board.board_shape[1]/2, board.tile_size*board.board_shape[1]/2, -board.tile_size*board.board_shape[0]/2, board.tile_size*board.board_shape[0]/2])
+
+
         estimation_x = estimation[0].flatten()
         estimation_y = estimation[1].flatten()
         mestx = np.mean(estimation_x)
@@ -84,13 +87,16 @@ def some_visuals(experiment_name:str, data:np.array):
         frame = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
         frame = frame.reshape(fig.canvas.get_width_height()[::-1] + (3,))
         frames.append(frame)
-
+        #imshow values
+        
         # Close the figure to free memory
         plt.close(fig)
 
     # Create a GIF from the list of frames
     name = np.random.randint(0,1000)
-    imageio.mimsave(f'{name}.gif', frames, fps=60)
+    #name = 'test'
+    visual_path = f'{_folders.VISUALIZATIONS_PATH}/{name}.gif'
+    imageio.mimsave(visual_path, frames, fps=60)
 
 if __name__ == '__main__':
 
