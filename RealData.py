@@ -5,7 +5,7 @@ import numpy as np
 import ast
 import pickle
 
-def explore_data_path(data_path, which_data):
+def explore_data_path(data_path, which_data, name):
 
     df = pd.DataFrame(columns=['shape', 'cm_x', 'cm_y', 'values'])
     for root, dirs, files in os.walk(data_path):
@@ -40,11 +40,13 @@ def explore_data_path(data_path, which_data):
     df.iloc[:, -1] = df.iloc[:, -1].apply(_convert_to_list_or_array)
     data = df.values
 
-    with open('RealData.pkl', 'wb') as f:
+    with open(f'Dataset/TrainData/RealData_{name}.pkl', 'wb') as f:
         pickle.dump(data, f)
 
 if __name__ == '__main__':
     data_path = 'Dataset'
-    which_data = 'calibrated_sensor_data_all_recordings'
-    explore_data_path(data_path, which_data)
+    which_datas = ['calibrated_sensor_data_all_recordings','uncalibrated_sensor_data']
+    names = ['Calibrated', 'Uncalibrated']
+    for which_data, name in zip(which_datas, names):
+        explore_data_path(data_path, which_data, name)
     

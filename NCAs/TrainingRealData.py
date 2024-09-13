@@ -112,7 +112,7 @@ class TrainerRealData:
                 print(f"loss: {round(l*1000,5)}\t\ttotal time: {round(rt,3)}")
         
         self.rh.save_training_results(experiment_name)
-        self.rh.plot_loss(experiment_name)
+        self.rh.plot_loss(f'Loss_{experiment_name}')
         
         logger.info(f"Finished training model on {device}")
         trained_model = copy.deepcopy(model.cpu())

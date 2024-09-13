@@ -3,22 +3,26 @@ import sys
 sys.path.append('NCAs')
 sys.path.append('Environment')
 import json
-import torch
 import pickle
+
+import matplotlib.pyplot as plt
 import numpy as np
+import torch
 from loguru import logger
+
+import _colors
 import _config
 import _folders
+from Environment.ContactBoard import ContactBoard
 from NCAs.NCA import NCA_CenterFinder
 from NCAs.NCA_REAL import NCA_REAL
 from NCAs.StateStructure import StateStructure
 from NCAs.TrainingRealData import TrainerRealData
-from NCAs.Util import set_seed, create_initial_states_real_data
-from Environment.ContactBoard import ContactBoard
+from NCAs.Util import create_initial_states_real_data, set_seed
 
 
 def _run_model(CMX:np.array, CMY:np.array, VALUES:np.array, model:NCA_REAL, state_structure:StateStructure, board:ContactBoard):
-    idx = np.random.randint(0, len(data))
+    idx = np.random.randint(0, len(VALUES))
     cmx = CMX[idx]
     cmy = CMY[idx]
     values = VALUES[idx].reshape(_config.BOARD_SHAPE)
@@ -30,9 +34,7 @@ def _run_model(CMX:np.array, CMY:np.array, VALUES:np.array, model:NCA_REAL, stat
     estimation_states = output_states[...,state_structure.estimation_channels, :, :]
     return cmx, cmy, estimation_states
 
-def make_data(model_path:str, data:np.array, experiment_name:str):
-    with open(model_path, 'rb') as handle:
-        model = pickle.load(handle)
+def make_data(model, data:np.array, name:str):
     
     board = ContactBoard(board_shape=_config.BOARD_SHAPE, tile_size=_config.TILE_SIZE, center=(0,0))
     CMX = data[:,1]
@@ -54,29 +56,45 @@ def make_data(model_path:str, data:np.array, experiment_name:str):
         distance_error = np.sqrt((cmx - mestx)**2 + (cmy - mesty)**2)
         errors.append(float(distance_error))
 
-    _folders.save_training_results({'errors': errors}, experiment_name)
+    _folders.save_training_results({'errors': errors}, f'Evaluation_{name}')
 
-def make_plot(experiment_name:str):
-    import matplotlib.pyplot as plt
-    results_path = f'{_folders.RESULTS_PATH}/{experiment_name}'
-    with open(f'{results_path}.json', 'r') as json_file:
-        data = json.load(json_file)
-    
-    #plot histogram
-    errors = data['errors']
-    mean = np.mean(errors)
-    std = np.std(errors)
+def make_plot(names):
+    palette = _colors.create_palette(len(names))    
+    all_errors = []
 
-    plt.hist(errors, bins=15, alpha=0.75, label='NCA Real Data, $\mu$: {:.2f}, $\sigma$: {:.2f}'.format(mean, std))
+    # First pass: collect all errors to compute the common bin edges
+    for name in names:
+        results_path = f'{_folders.RESULTS_PATH}/Evaluation_{name}'
+        with open(f'{results_path}.json', 'r') as json_file:
+            data = json.load(json_file)
+        all_errors.extend(data['errors'])
+
+    # Define bin edges based on the global range of errors
+    min_error = np.min(all_errors)
+    max_error = np.max(all_errors)
+    bins = np.linspace(min_error, max_error, 21)
+
+    # Second pass: plot each histogram with the same bins
+    for i, name in enumerate(names):
+        results_path = f'{_folders.RESULTS_PATH}/Evaluation_{name}'
+        with open(f'{results_path}.json', 'r') as json_file:
+            data = json.load(json_file)
+        errors = data['errors']
+        mean = np.round(np.mean(errors), 2)
+        std = np.round(np.std(errors), 2)
+        label = f'NCA {name}, $\\mu$: {mean}, $\\sigma$: {std}'
+        plt.hist(errors, bins=bins, alpha=0.75, color=palette[i], label=label)
+
     plt.legend(loc='upper right')
     plt.xlabel('Distance Error')
     plt.ylabel('Frequency')
     plt.title('Distance Error Histogram')
-    plt.show()
+    image_path = f'{_folders.VISUALIZATIONS_PATH}/Comparison.png'
+    plt.savefig(image_path, dpi=300, bbox_inches='tight')
 
 if __name__ == '__main__':
 
-    experiment_name=f'Exp_Performance'
+    experiment_name=f'Exp_RealSystem'
     _folders.set_experiment_folders(experiment_name)
     _config.set_parameters({
         'BOARD_SHAPE' :     [4,4],
@@ -89,14 +107,16 @@ if __name__ == '__main__':
                         constant_dim    = 2,   
                         sensor_dim      = 1,   
                         hidden_dim      = 10)
-    files_name = f'{_config.NEIGHBORHOOD}_{experiment_name}'
+    
+    NAMES = ['Calibrated','Uncalibrated']
+    
+    if False:
+        for name in NAMES:
+            data_path = f"Dataset/TrainData/RealData_{name}.pkl"
+            with open(data_path, 'rb') as f:
+                data = pickle.load(f)
 
-
-    data_path = f"RealData.pkl"
-    with open(data_path, 'rb') as f:
-        data = pickle.load(f)
-
-    print(data.shape)
-    model_path = 'EXP_REAL_SYSTEM\__Models\Chebyshev_EXP_REAL_SYSTEM.pkl'
-    #make_data(model_path, data, experiment_name)
-    make_plot(experiment_name)
+            model = _folders.load_model(name)        
+            make_data(model, data, name)
+    
+    make_plot(NAMES)

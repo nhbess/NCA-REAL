@@ -60,14 +60,14 @@ def set_experiment_folders(experiment_name:str):
 
 
 
-def save_model(trained_model:nn.Module, experiment_name:str ) -> None:
-    path = f'{MODELS_PATH}/{experiment_name}.pkl'
+def save_model(trained_model:nn.Module, model_name:str ) -> None:
+    path = f'{MODELS_PATH}/{model_name}.pkl'
     logger.info(f"Saving model to path {path}")
     with open(path, 'wb') as handle:
         pickle.dump(trained_model, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-def load_model(experiment_name:str) -> nn.Module:
-    path = f'{MODELS_PATH}/{experiment_name}.pkl'
+def load_model(model_name:str) -> nn.Module:
+    path = f'{MODELS_PATH}/{model_name}.pkl'
     logger.info(f"Loading model from path {path}")
     with open(path, 'rb') as handle:
         model = pickle.load(handle)
@@ -93,4 +93,7 @@ def save_training_plot(data, experiment_name):
     #plt.yscale('log')
     image_path = os.path.join(VISUALIZATIONS_PATH, f'{experiment_name}.png')
     plt.savefig(image_path)
-    plt.show()
+    #clear plot
+    plt.clf()
+    plt.close()
+    #plt.show()

@@ -3,6 +3,8 @@ import sys
 sys.path.append('NCAs')
 sys.path.append('Environment')
 
+import matplotlib.pyplot as plt
+import imageio
 import copy
 import torch
 import pickle
@@ -17,23 +19,21 @@ from NCAs.TrainingRealData import TrainerRealData
 from NCAs.Util import set_seed, create_initial_states_real_data
 from Environment.ContactBoard import ContactBoard
 
-def run_block(state_structure:StateStructure, data:np.array, files_name:str, seed = None):
+def run_block(state_structure:StateStructure, data:np.array, model_name:str, seed = None):
     if seed is not None:
         set_seed(seed)
 
     model = NCA_REAL(state_structure=state_structure)
-    trained_model = TrainerRealData(data).train_center_finder(model=model, state_structure=state_structure, experiment_name=files_name)
-    _folders.save_model(trained_model=trained_model, experiment_name=files_name)
-    logger.success(f"Model {files_name} trained and saved")
+    trained_model = TrainerRealData(data).train_center_finder(model=model, state_structure=state_structure, experiment_name=model_name)
+    _folders.save_model(trained_model=trained_model, model_name=model_name)
+    logger.success(f"Model {model_name} trained and saved")
 
-def some_visuals(experiment_name:str, data:np.array):
+def some_visuals(experiment_name:str, data:np.array, id:int = 0):
     #load model
     model = _folders.load_model(experiment_name).eval()
-    print(len(data))
     CMX = data[:,1]
     CMY = data[:,2]
     VALUES = np.vstack(data[:,-1])
-    print(VALUES.shape)
     #pick a random index
     idx = np.random.randint(0, len(data))
     cmx = CMX[idx]
@@ -51,11 +51,7 @@ def some_visuals(experiment_name:str, data:np.array):
     output_states:torch.Tensor = model(initial_state, np.random.randint(*_config.UPDATE_STEPS), return_frames=True)
     estimation_states = output_states[...,state_structure.estimation_channels, :, :]
 
-    print(estimation_states.shape)
-
     steps = estimation_states.shape[0]
-    import matplotlib.pyplot as plt
-    import imageio
     frames = []
     for i in range(steps):
         estimation = estimation_states[i].detach().cpu().numpy()
@@ -93,14 +89,12 @@ def some_visuals(experiment_name:str, data:np.array):
         plt.close(fig)
 
     # Create a GIF from the list of frames
-    name = np.random.randint(0,1000)
-    #name = 'test'
-    visual_path = f'{_folders.VISUALIZATIONS_PATH}/{name}.gif'
+    visual_path = f'{_folders.VISUALIZATIONS_PATH}/{experiment_name}_{id}.gif'
     imageio.mimsave(visual_path, frames, fps=60)
 
 if __name__ == '__main__':
 
-    experiment_name=f'EXP_REAL_SYSTEM'
+    experiment_name=f'Exp_RealSystem'
     _folders.set_experiment_folders(experiment_name)
     _config.set_parameters({
         'BOARD_SHAPE' :     [4,4],
@@ -113,13 +107,15 @@ if __name__ == '__main__':
                         constant_dim    = 2,   
                         sensor_dim      = 1,   
                         hidden_dim      = 10)
-    files_name = f'{_config.NEIGHBORHOOD}_{experiment_name}'
+    
 
+    NAMES = ['Calibrated','Uncalibrated']
 
-    data_path = f"RealData.pkl"
-    with open(data_path, 'rb') as f:
-        data = pickle.load(f)
+    for name in NAMES:
+        data_path = f"Dataset/TrainData/RealData_{name}.pkl"
+        with open(data_path, 'rb') as f:
+            data = pickle.load(f)
 
-    print(data.shape)
-    #run_block(state_structure=state_structure, data=data, files_name= files_name, seed=None)
-    some_visuals('Chebyshev_EXP_REAL_SYSTEM', data)
+        run_block(state_structure=state_structure, data=data, model_name= name, seed=None)
+        for i in range(5):
+            some_visuals(name, data, i)
