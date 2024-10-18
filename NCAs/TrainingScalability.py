@@ -1,5 +1,5 @@
 import copy
-
+import sys
 import numpy as np
 import torch
 import torch.nn as nn
@@ -32,15 +32,6 @@ class TrainingScalability:
         loss = batch_losses_list.mean()
 
         return loss, batch_losses_list
-    
-    def _create_dead_mask(self, device: torch.device) -> torch.Tensor:
-        dead_percent = np.random.randint(*_config.DEAD_PERCENTAGE) / 100
-        dead_mask = torch.ones(_config.BOARD_SHAPE, device=device)
-        dead_mask = dead_mask.flatten()
-        dead_mask[:int(dead_mask.shape[0] * dead_percent)] = 0    
-        dead_mask = dead_mask[torch.randperm(dead_mask.shape[0])]
-        dead_mask = dead_mask.reshape(_config.BOARD_SHAPE)
-        return dead_mask
 
     def train_center_finder(self, model:nn.Module, state_structure:StateStructure, experiment_name:str = None, robustness:bool = False) -> nn.Module:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -52,41 +43,25 @@ class TrainingScalability:
 
         pool = create_initial_states(_config.POOL_SIZE, state_structure, _config.BOARD_SHAPE).to(device)
         
-        
-        
-        
         logger.info(f"Training for {_config.TRAINING_STEPS} epochs")
         self.rh.set_training_start()
 
         for step in tqdm(range(1,_config.TRAINING_STEPS+1)):
-
             pool_indexes = np.random.randint(_config.POOL_SIZE, size=[_config.BATCH_SIZE])
             input_states = pool[pool_indexes].to(device)
-            #pool_indexes = list(np.random.randint(config.POOL_SIZE, size=[config.BATCH_SIZE]))
-            #input_states = pool[pool_indexes].to(device)
-
-
-
-            contact_masks = moving_contact_masks(_config.NUM_MOVEMENTS, _config.BATCH_SIZE, *_config.BOARD_SHAPE).to(device)
             
+            contact_masks = moving_contact_masks(_config.NUM_MOVEMENTS, _config.BATCH_SIZE, *_config.BOARD_SHAPE).to(device)
             total_batch_losses_list = []
             total_losses = []
-                            
-            for movement in range(_config.NUM_MOVEMENTS):
-                #print(input_states[0][0])
-                dead_input_states = input_states
-                dead_input_states[..., state_structure.sensor_channels, :, :] = contact_masks[movement].unsqueeze(1)
-                
-                
-                sensor_states = dead_input_states[..., state_structure.sensor_channels, :, :]
-                constant_states = dead_input_states[..., state_structure.constant_channels, :, :]
 
-                #TODO: I am not saving anything back into the pool!
+            for movement in range(_config.NUM_MOVEMENTS):
+                input_states[..., state_structure.sensor_channels, :, :] = contact_masks[movement].unsqueeze(1)
+                sensor_states = input_states[..., state_structure.sensor_channels, :, :]
+                constant_states = input_states[..., state_structure.constant_channels, :, :]
 
                 target_states = get_target_tensor(sensor_states, constant_states).to(device)
 
-                #TODO: DO I need dead mask here in the forward pass how does it work since I am passing not a single but BatchSize things?
-                states:torch.Tensor = model(dead_input_states, np.random.randint(*_config.UPDATE_STEPS), return_frames=True, dead_mask=None)
+                states:torch.Tensor = model(input_states, np.random.randint(*_config.UPDATE_STEPS), return_frames=True)
                 sensible_states = states[...,state_structure.estimation_channels, :, :] 
                          
                 mov_loss, mov_batch_losses_list = self._loss_center_finder_all_frames(target_states, sensible_states, sensor_states)
@@ -117,6 +92,7 @@ class TrainingScalability:
                 print(f"loss: {round(l*1000,5)}\t\ttotal time: {round(rt,3)}")
         
         self.rh.save_training_results(experiment_name)
+        self.rh.plot_loss(f'Loss_{experiment_name}')
         logger.info(f"Finished training model on {device}")
         trained_model = copy.deepcopy(model.cpu())
         return trained_model

@@ -1,5 +1,5 @@
 from MSTile import MultiSensoryTile
-from WTetromino import WTetromino
+from Tetromino import Tetromino
 import numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, Point
@@ -62,13 +62,13 @@ class ContactBoard:
         return X,Y
 
 
-    def has_tetromino_inside(self, tetromino: WTetromino) -> bool:
+    def has_tetromino_inside(self, tetromino: Tetromino) -> bool:
             return self.contour.contains(tetromino.polygon)
     
     def has_point_inside(self, point: tuple) -> bool:
         return self.contour.contains(Point(point))
     
-    def get_contact_mask(self, tetromino: WTetromino) -> np.array:
+    def get_contact_mask(self, tetromino: Tetromino) -> np.array:
         contact_mask = np.zeros(self.board_shape, dtype=int)
         for tile in self.tiles:
             if any(tetromino.polygon.buffer(1e-6).contains(sensor) for sensor in tile.sensors):
@@ -77,7 +77,7 @@ class ContactBoard:
                 contact_mask[row_index, col_index] = 1
         return contact_mask
 
-    def plot(self, tetromino: WTetromino = None, plot_density = False) -> None:
+    def plot(self, tetromino: Tetromino = None, plot_density = False) -> None:
         for tile in self.tiles:
             tile.plot()
         #plot contour
@@ -115,6 +115,12 @@ class ContactBoard:
         #plt.savefig('all.png', dpi=600, bbox_inches='tight')
         #plt.show()
 
+def test():
+    board = ContactBoard(board_shape=[10, 10], tile_size=1)
+    import Shapes
+    tetromino = Tetromino(constructor_vertices=Shapes.tetrominos[0], scaler=2)
+    tetromino.center = np.array([0, 0])
+    print(board.get_contact_mask(tetromino))
 
 if __name__ == '__main__':
     pass

@@ -7,7 +7,6 @@ import Shapes
 class Tetromino:
     def __init__(self, constructor_vertices:list[tuple], scaler:float = 1) -> None:
         self.__constructor_vertices = constructor_vertices
-        self.id = id
         self.scaler = scaler
         self.polygon = Polygon(constructor_vertices*scaler)
         self.__angle = 0.0
@@ -60,7 +59,7 @@ class Tetromino:
  
 def test():
     SCALE = 15
-    tetromino = Tetromino(constructor_vertices=Shapes.VERTICES_T*SCALE)
+    tetromino = Tetromino(constructor_vertices=Shapes.tetrominos[0], scaler=SCALE)
     tetromino.center = np.array([0, 0])
     tetromino.print_info()
     tetromino.plot()

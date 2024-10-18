@@ -35,17 +35,9 @@ def create_initial_states(n_states:int, state_structure:StateStructure, board_sh
     pool[..., state_structure.estimation_channels, :, :] = torch.stack([x, y], dim=0)
     return pool
 
-def _calculate_max_distance(vertices):
-    pairwise_distances = np.linalg.norm(vertices[:, np.newaxis] - vertices, axis=-1)
-    np.fill_diagonal(pairwise_distances, 0)  # Set diagonal elements to 0 to avoid self-pairwise distances
-    max_distance = np.max(pairwise_distances)
-    return max_distance
-
 def moving_contact_masks(n_movements: int, batch_size: int, height: int, width: int, show:bool=False) -> torch.Tensor:
-    board = ContactBoard(board_shape=[height, width])
+    board = ContactBoard(board_shape=[height, width], tile_size=_config.TILE_SIZE)
     contact_masks = torch.zeros(n_movements, batch_size, height, width)
-
-    min_size_board = min(height, width)
     tetrominos = []
 
     #Load tetrominos
@@ -53,22 +45,18 @@ def moving_contact_masks(n_movements: int, batch_size: int, height: int, width: 
         shape_index =   random.randint(0, len(Shapes.tetrominos)-1)
         shape       =   Shapes.tetrominos[shape_index]
         
-        #max_side_lengths = _calculate_max_distance(shape)
-        #max_scaler = min_size_board / max_side_lengths
-        #scaler = np.random.uniform(2, max_scaler)
-
-        # VERY IMPORTANT: CHECK THIS SCALER
-        SCALER = 1
+        SCALER = 1*_config.TILE_SIZE
 
         tetro = Tetromino(constructor_vertices=shape, scaler=SCALER)
-        tetro.center = np.array([width / 2, height / 2])
+        tetro.center = np.array([0, 0])
         tetrominos.append(tetro)
 
+    MOVEMENT_SPAN = _config.TILE_SIZE/10
     for batch_index in range(batch_size):
         for movement_index in range(n_movements):
             tetro = tetrominos[batch_index]
             while True:
-                displacement = np.random.uniform(-1, 1, size=2)
+                displacement = np.random.uniform(-MOVEMENT_SPAN, MOVEMENT_SPAN, size=2)
                 if board.has_point_inside(displacement + tetro.center):
                     break
             tetro.translate(displacement)
