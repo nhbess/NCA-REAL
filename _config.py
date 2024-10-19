@@ -9,7 +9,7 @@ DEFAULT_PARAMETERS = {
         'POOL_SIZE' :       1000,
         'TRAINING_STEPS' :  10,
         'UPDATE_STEPS' :    [15, 30],
-        'NUM_MOVEMENTS' :   10,
+        'NUM_MOVEMENTS' :   1,#10,
         'NEIGHBORHOOD' :    'Chebyshev',
         'DEAD_PERCENTAGE' : [0,25], # %
         'TILE_SIZE' :       37.5, #milimeters

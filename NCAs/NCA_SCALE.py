@@ -53,7 +53,7 @@ class NCA_SCALE(nn.Module):
     def forward(self, input_state:torch.Tensor, num_steps:int, return_frames = False, dropout:float=0.2) -> torch.Tensor:
         frames = []
         for _ in range(num_steps):
-            
+            sensor_state = input_state[..., self.state_structure.sensor_channels, :, :]
             update_mask = torch.rand(*_config.BOARD_SHAPE, device=input_state.device) > dropout # drop some updates to make asynchronous            
             
             base = torch.zeros_like(input_state)
@@ -62,7 +62,7 @@ class NCA_SCALE(nn.Module):
             base[..., self.state_structure.estimation_channels, :, :] = out_channels[..., self.state_structure.out_estimation_channels, :, :]
             base[..., self.state_structure.hidden_channels, :, :] = out_channels[..., self.state_structure.out_hidden_channels, :, :]   
             
-            input_state = input_state + update_mask * base 
+            input_state = input_state + update_mask * base * sensor_state
 
             frames.append(input_state)
             if torch.isnan(input_state).any():

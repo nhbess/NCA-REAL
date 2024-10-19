@@ -9,7 +9,7 @@ from torch.optim.lr_scheduler import MultiStepLR
 import _config
 from ResultsHandler import ResultsHandler
 from StateStructure import StateStructure
-from Util import create_initial_states, get_target_tensor, moving_contact_masks
+from Util import moving_contact_masks, create_initial_states_relative, get_target_tensor_relative
 from tqdm import tqdm
 
 class TrainingScalability:
@@ -41,7 +41,8 @@ class TrainingScalability:
         optimizer = torch.optim.Adam(params=model.parameters(), lr=_config.LEARNING_RATE, weight_decay=_config.WEIGHT_DECAY)
         scheduler = MultiStepLR(optimizer=optimizer, milestones=_config.MILESTONES, gamma=_config.GAMMA)
 
-        pool = create_initial_states(_config.POOL_SIZE, state_structure, _config.BOARD_SHAPE).to(device)
+        #pool = create_initial_states(_config.POOL_SIZE, state_structure, _config.BOARD_SHAPE).to(device)
+        pool = create_initial_states_relative(_config.POOL_SIZE, state_structure, _config.BOARD_SHAPE).to(device)
         
         logger.info(f"Training for {_config.TRAINING_STEPS} epochs")
         self.rh.set_training_start()
@@ -57,9 +58,9 @@ class TrainingScalability:
             for movement in range(_config.NUM_MOVEMENTS):
                 input_states[..., state_structure.sensor_channels, :, :] = contact_masks[movement].unsqueeze(1)
                 sensor_states = input_states[..., state_structure.sensor_channels, :, :]
-                constant_states = input_states[..., state_structure.constant_channels, :, :]
+                #constant_states = input_states[..., state_structure.constant_channels, :, :]
 
-                target_states = get_target_tensor(sensor_states, constant_states).to(device)
+                target_states = get_target_tensor_relative(sensor_states).to(device)
 
                 states:torch.Tensor = model(input_states, np.random.randint(*_config.UPDATE_STEPS), return_frames=True)
                 sensible_states = states[...,state_structure.estimation_channels, :, :] 
@@ -80,7 +81,7 @@ class TrainingScalability:
             
             indexes_to_replace = torch.argsort(total_batch_losses_list, descending=True)[:int(.15*_config.BATCH_SIZE)]
             final_states = states.detach()[-1]
-            empty_states = create_initial_states(len(indexes_to_replace), state_structure, _config.BOARD_SHAPE).to(device)
+            empty_states = create_initial_states_relative(len(indexes_to_replace), state_structure, _config.BOARD_SHAPE).to(device)
             final_states[indexes_to_replace] = empty_states
             pool[pool_indexes] = final_states
 

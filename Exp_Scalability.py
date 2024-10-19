@@ -15,7 +15,7 @@ import _folders
 from NCAs.NCA_SCALE import NCA_SCALE
 from NCAs.StateStructure import StateStructure
 from NCAs.TrainingScalability import TrainingScalability
-from NCAs.Util import set_seed, moving_contact_masks, create_initial_states
+from NCAs.Util import set_seed, moving_contact_masks, create_initial_states, create_initial_states_real_data, create_initial_states_relative
 from Environment.ContactBoard import ContactBoard
 
 def run_block(state_structure:StateStructure, model_name:str, seed = None):
@@ -32,26 +32,30 @@ def some_visuals(model_name:str, id:int = 0):
     #load model
     model = _folders.load_model(model_name).eval()
     
+    #board = ContactBoard(board_shape=_config.BOARD_SHAPE, tile_size=_config.TILE_SIZE, center=(0,0))
     
-    initial_state = create_initial_states(n_states=1, state_structure=state_structure, board_shape=[8,8])
-
+    initial_state = create_initial_states_relative(n_states=1, state_structure=state_structure, board_shape=_config.BOARD_SHAPE)[0]
+    
     initial_state[..., state_structure.sensor_channels, :, :] = moving_contact_masks(1, 1, *_config.BOARD_SHAPE).unsqueeze(1)
-            
+
     output_states:torch.Tensor = model(initial_state, np.random.randint(*_config.UPDATE_STEPS), return_frames=True)
     estimation_states = output_states[...,state_structure.estimation_channels, :, :]
     sensor_states = output_states[...,state_structure.sensor_channels, :, :]
     steps = estimation_states.shape[0]
     frames = []
+
     for i in range(steps):
+
+
 
         estimation = estimation_states[i].detach().cpu().numpy()
         estimation = estimation.reshape(2, -1)        
         
-        sensor_state = sensor_states[i].detach().cpu().numpy()[0][0]
+        sensor_state = sensor_states[i].detach().cpu().numpy()[0]
 
         fig, ax = plt.subplots()
 
-        ax.imshow(sensor_state, cmap='viridis', alpha=0.9)
+        ax.imshow(sensor_state, cmap='grey', alpha=0.9)
 
 
         estimation_x = estimation[0].flatten()
@@ -89,18 +93,19 @@ if __name__ == '__main__':
     experiment_name=f'Exp_Scalability'
     _folders.set_experiment_folders(experiment_name)
     _config.set_parameters({
-        'BOARD_SHAPE' :     [8,8],
-        'TRAINING_STEPS' :  1000,
+        'BOARD_SHAPE' :     [4,4],
+        'TRAINING_STEPS' :  100,
         'BATCH_SIZE' :      10,
     })
 
     state_structure = StateStructure(
                         estimation_dim  = 2,    
-                        constant_dim    = 2,   
+                        constant_dim    = 0,   
                         sensor_dim      = 1,   
                         hidden_dim      = 10)
     
     model_name = 'Scalability'
     run_block(state_structure=state_structure, model_name= model_name, seed=None)
+    
     for i in range (5):
         some_visuals(model_name = model_name, id=i)

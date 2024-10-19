@@ -35,6 +35,14 @@ def create_initial_states(n_states:int, state_structure:StateStructure, board_sh
     pool[..., state_structure.estimation_channels, :, :] = torch.stack([x, y], dim=0)
     return pool
 
+def create_initial_states_relative(n_states:int, state_structure:StateStructure, board_shape:tuple) -> torch.Tensor:
+    '''
+    Return a tensor of shape [n_states, state_dim, board_shape[0], board_shape[1]].
+    With constant values in the constant channels, and the coordinates in the estimation channels.
+    '''
+    pool = torch.zeros(n_states, state_structure.state_dim, *board_shape)
+    return pool
+
 def moving_contact_masks(n_movements: int, batch_size: int, height: int, width: int, show:bool=False) -> torch.Tensor:
     board = ContactBoard(board_shape=[height, width], tile_size=_config.TILE_SIZE)
     contact_masks = torch.zeros(n_movements, batch_size, height, width)
@@ -115,6 +123,27 @@ def get_target_tensor(sensor_states: torch.Tensor, constant_states: torch.Tensor
         target_tensor[i, 1] = mass_center[1] * contact_mask
 
     return target_tensor
+
+def get_target_tensor_relative(sensor_states: torch.Tensor):
+    N, _, H, W = sensor_states.shape
+    target_tensor = torch.ones(N, 2, H, W)
+    for i in range(N):
+        sensor_state = sensor_states[i][0]
+        x_coords, y_coords = torch.meshgrid(torch.arange(H), torch.arange(W), indexing='ij')
+
+        mcx = torch.sum(x_coords * sensor_state) / torch.sum(sensor_state)
+        mcy = torch.sum(y_coords * sensor_state) / torch.sum(sensor_state)
+
+        #relative_x = (x_coords - mcx)*sensor_state
+        #relative_y = (y_coords - mcy)*sensor_state
+        
+        target_tensor[i, 0] = mcx*sensor_state
+        target_tensor[i, 1] = mcy*sensor_state
+
+    return target_tensor
+
+
+
 
 def create_initial_states_real_data(n_states:int, state_structure:StateStructure, X:np.array,Y:np.array) -> torch.Tensor:
         '''
