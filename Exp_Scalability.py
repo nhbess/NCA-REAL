@@ -15,7 +15,7 @@ import _folders
 from NCAs.NCA_SCALE import NCA_SCALE
 from NCAs.StateStructure import StateStructure
 from NCAs.TrainingScalability import TrainingScalability
-from NCAs.Util import set_seed, create_initial_states_real_data
+from NCAs.Util import set_seed, moving_contact_masks, create_initial_states
 from Environment.ContactBoard import ContactBoard
 
 def run_block(state_structure:StateStructure, model_name:str, seed = None):
@@ -28,32 +28,30 @@ def run_block(state_structure:StateStructure, model_name:str, seed = None):
     logger.success(f"Model {model_name} trained and saved")
 
 
-def some_visuals(experiment_name:str, id:int = 0):
+def some_visuals(model_name:str, id:int = 0):
     #load model
-    model = _folders.load_model(experiment_name).eval()
+    model = _folders.load_model(model_name).eval()
     
-    board = ContactBoard(board_shape=_config.BOARD_SHAPE, tile_size=_config.TILE_SIZE, center=(0,0))
-    X_pos,Y_pos = board.sensor_positions
+    
+    initial_state = create_initial_states(n_states=1, state_structure=state_structure, board_shape=[8,8])
 
-    initial_state = create_initial_states_real_data(n_states=1, state_structure=state_structure, X=X_pos, Y=Y_pos)[0]
-            
-    # ASSIGN DATA TO INPUT STATES       
-    initial_state[..., state_structure.sensor_channels, :, :] = torch.from_numpy(values).unsqueeze(0)
+    initial_state[..., state_structure.sensor_channels, :, :] = moving_contact_masks(1, 1, *_config.BOARD_SHAPE).unsqueeze(1)
             
     output_states:torch.Tensor = model(initial_state, np.random.randint(*_config.UPDATE_STEPS), return_frames=True)
     estimation_states = output_states[...,state_structure.estimation_channels, :, :]
-
+    sensor_states = output_states[...,state_structure.sensor_channels, :, :]
     steps = estimation_states.shape[0]
     frames = []
     for i in range(steps):
+
         estimation = estimation_states[i].detach().cpu().numpy()
+        estimation = estimation.reshape(2, -1)        
         
-        # Create a new figure for each frame
+        sensor_state = sensor_states[i].detach().cpu().numpy()[0][0]
+
         fig, ax = plt.subplots()
 
-        # Plot your board and estimation
-        #board.plot()
-        ax.imshow(values, cmap='viridis', alpha=0.9, extent=[-board.tile_size*board.board_shape[1]/2, board.tile_size*board.board_shape[1]/2, -board.tile_size*board.board_shape[0]/2, board.tile_size*board.board_shape[0]/2])
+        ax.imshow(sensor_state, cmap='viridis', alpha=0.9)
 
 
         estimation_x = estimation[0].flatten()
@@ -61,13 +59,13 @@ def some_visuals(experiment_name:str, id:int = 0):
         mestx = np.mean(estimation_x)
         mesty = np.mean(estimation_y)
         ax.scatter(estimation_x, estimation_y, c='orange', marker='x', label='Estimation')
-        ax.scatter(cmx, cmy, c='blue', marker='x', label='Real')
+        #ax.scatter(cmx, cmy, c='blue', marker='x', label='Real')
         ax.scatter(mestx, mesty, c='red', marker='x', label='Mean Estimation')
 
         #draw and arrow from the real to the mean estimation
-        ax.arrow(cmx, cmy, mestx-cmx, mesty-cmy, head_width=0.1, head_length=0.1, fc='grey', ec='grey')
+        #ax.arrow(cmx, cmy, mestx-cmx, mesty-cmy, head_width=0.1, head_length=0.1, fc='grey', ec='grey')
         #draw text with the distance between the real and the mean estimation
-        ax.text(cmx + (mestx-cmx)/2, cmy + (mesty-cmy)/2, f'{np.linalg.norm([mestx-cmx, mesty-cmy]):.2f} mm', fontsize=12, color='black')
+        #ax.text(cmx + (mestx-cmx)/2, cmy + (mesty-cmy)/2, f'{np.linalg.norm([mestx-cmx, mesty-cmy]):.2f} mm', fontsize=12, color='black')
         # Convert the figure to a NumPy array
         #label
         ax.legend()
@@ -81,7 +79,7 @@ def some_visuals(experiment_name:str, id:int = 0):
         plt.close(fig)
 
     # Create a GIF from the list of frames
-    visual_path = f'{_folders.VISUALIZATIONS_PATH}/{experiment_name}_{id}.gif'
+    visual_path = f'{_folders.VISUALIZATIONS_PATH}/{model_name}_{id}.gif'
     imageio.mimsave(visual_path, frames, fps=60)
 
 
@@ -91,8 +89,8 @@ if __name__ == '__main__':
     experiment_name=f'Exp_Scalability'
     _folders.set_experiment_folders(experiment_name)
     _config.set_parameters({
-        'BOARD_SHAPE' :     [4,4],
-        'TRAINING_STEPS' :  100,
+        'BOARD_SHAPE' :     [8,8],
+        'TRAINING_STEPS' :  1000,
         'BATCH_SIZE' :      10,
     })
 
@@ -104,4 +102,5 @@ if __name__ == '__main__':
     
     model_name = 'Scalability'
     run_block(state_structure=state_structure, model_name= model_name, seed=None)
-    
+    for i in range (5):
+        some_visuals(model_name = model_name, id=i)
