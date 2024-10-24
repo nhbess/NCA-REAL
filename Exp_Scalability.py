@@ -150,7 +150,7 @@ def plot_scalability(model_name:str):
     plt.ylabel('Mean Error')
     plt.title('Scalability')
     #ticks to board shapes
-    plt.xticks(boards)
+    #plt.xticks(boards)
     plt.savefig(f'{_folders.VISUALIZATIONS_PATH}/{model_name}_results.png')
     plt.close()
 
@@ -173,8 +173,8 @@ if __name__ == '__main__':
     model_name = 'Scalability'
     #run_block(state_structure=state_structure, model_name= model_name, seed=None)
     #evaluate_scalability(state_structure=state_structure, model_name=model_name, seed=None)
-    #plot_scalability(model_name=model_name)
+    plot_scalability(model_name=model_name)
 
     BOARD_SHAPES = [4, 10, 20]
-    for b in BOARD_SHAPES:
-        some_visuals(model_name = model_name, board_shape = b, id=b)
+    #for b in BOARD_SHAPES:
+    #    some_visuals(model_name = model_name, board_shape = b, id=b)
