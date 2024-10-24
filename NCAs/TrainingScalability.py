@@ -41,7 +41,6 @@ class TrainingScalability:
         optimizer = torch.optim.Adam(params=model.parameters(), lr=_config.LEARNING_RATE, weight_decay=_config.WEIGHT_DECAY)
         scheduler = MultiStepLR(optimizer=optimizer, milestones=_config.MILESTONES, gamma=_config.GAMMA)
 
-        #pool = create_initial_states(_config.POOL_SIZE, state_structure, _config.BOARD_SHAPE).to(device)
         pool = create_initial_states_relative(_config.POOL_SIZE, state_structure, _config.BOARD_SHAPE).to(device)
         
         logger.info(f"Training for {_config.TRAINING_STEPS} epochs")

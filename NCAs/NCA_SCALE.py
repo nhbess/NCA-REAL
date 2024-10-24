@@ -44,17 +44,16 @@ class NCA_SCALE(nn.Module):
         else:
             raise Exception(f'Invalid neighborhood {_config.NEIGHBORHOOD}') 
         
-        # Perform the matrix multiplication
         kernel = kernel*N.T
-        
         self.update[0].weight.data[...] = torch.Tensor(kernel)[:, None, :, :]
         self.update[0].weight.requires_grad = False
     
     def forward(self, input_state:torch.Tensor, num_steps:int, return_frames = False, dropout:float=0.2) -> torch.Tensor:
         frames = []
+        H,W = input_state.shape[-2:]
         for _ in range(num_steps):
             sensor_state = input_state[..., self.state_structure.sensor_channels, :, :]
-            update_mask = torch.rand(*_config.BOARD_SHAPE, device=input_state.device) > dropout # drop some updates to make asynchronous            
+            update_mask = torch.rand([H,W], device=input_state.device) > dropout # drop some updates to make asynchronous            
             
             base = torch.zeros_like(input_state)
             out_channels = self.update(input_state)

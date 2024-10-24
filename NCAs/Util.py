@@ -137,8 +137,8 @@ def get_target_tensor_relative(sensor_states: torch.Tensor):
         #relative_x = (x_coords - mcx)*sensor_state
         #relative_y = (y_coords - mcy)*sensor_state
         
-        target_tensor[i, 0] = mcx*sensor_state
-        target_tensor[i, 1] = mcy*sensor_state
+        target_tensor[i, 0] = (mcx-x_coords)*sensor_state
+        target_tensor[i, 1] = (mcy-y_coords)*sensor_state
 
     return target_tensor
 
