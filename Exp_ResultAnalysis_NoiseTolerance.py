@@ -8,7 +8,9 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+
 from loguru import logger
+from tqdm import tqdm
 
 import _colors
 import _config
@@ -41,55 +43,60 @@ def make_data(model, data:np.array, name:str):
     CMY = data[:,2]
     VALUES = np.vstack(data[:,-1])
     
-    RUNS = 1000
+    N_FAULTS = _config.BOARD_SHAPE[0]*_config.BOARD_SHAPE[1]
+    FAULTS = np.arange(N_FAULTS+1)
+    RUNS_PER_FAULT = 100
     
-    errors = []
+    errors = {}
 
-    for i in range(RUNS): 
-        cmx, cmy, estimation_states = _run_model(CMX, CMY, VALUES, model, state_structure, board)
-        estimation = estimation_states.detach().cpu().numpy()
-        estimation_x = estimation[0].flatten()
-        estimation_y = estimation[1].flatten()
-        mestx = np.mean(estimation_x)
-        mesty = np.mean(estimation_y)
+    for faulty in tqdm(FAULTS):
+        values = np.copy(VALUES)
+        faulty_mask = np.ones_like(values)
+        for m in faulty_mask:
+            m[np.random.choice(np.arange(len(m)), faulty, replace=False)] = 0
 
-        distance_error = np.sqrt((cmx - mestx)**2 + (cmy - mesty)**2)
-        errors.append(float(distance_error))
+        values = values * faulty_mask
+        errors_run = []
+        for i in range(RUNS_PER_FAULT):
+            cmx, cmy, estimation_states = _run_model(CMX, CMY, values, model, state_structure, board)
+            estimation = estimation_states.detach().cpu().numpy()
+            estimation_x = estimation[0].flatten()
+            estimation_y = estimation[1].flatten()
+            mestx = np.mean(estimation_x)
+            mesty = np.mean(estimation_y)
 
-    _folders.save_training_results({'errors': errors}, f'Evaluation_{name}')
+            distance_error = np.sqrt((cmx - mestx)**2 + (cmy - mesty)**2)
+            errors_run.append(float(distance_error))
+        errors[str(faulty)] = errors_run
+    _folders.save_training_results({'errors': errors}, f'NoiseTolerance_{name}')
 
 def make_plot(names):
     palette = _colors.create_palette(len(names))    
-    all_errors = []
-
+    
     # First pass: collect all errors to compute the common bin edges
-    for name in names:
-        results_path = f'{_folders.RESULTS_PATH}/Evaluation_{name}'
-        with open(f'{results_path}.json', 'r') as json_file:
-            data = json.load(json_file)
-        all_errors.extend(data['errors'])
-
-    # Define bin edges based on the global range of errors
-    min_error = np.min(all_errors)
-    max_error = np.max(all_errors)
-    bins = np.linspace(min_error, max_error, 21)
-
-    # Second pass: plot each histogram with the same bins
     for i, name in enumerate(names):
-        results_path = f'{_folders.RESULTS_PATH}/Evaluation_{name}'
+        results_path = f'{_folders.RESULTS_PATH}/NoiseTolerance_{name}'
         with open(f'{results_path}.json', 'r') as json_file:
             data = json.load(json_file)
-        errors = data['errors']
-        mean = np.round(np.mean(errors), 2)
-        std = np.round(np.std(errors), 2)
-        label = f'NCA {name}, $\\mu$: {mean}, $\\sigma$: {std}'
-        plt.hist(errors, bins=bins, alpha=0.75, color=palette[i], label=label)
+        
+        data_errors = data['errors']
+        n_faulty_tiles = np.array(list(data_errors.keys()), dtype=int)
+        percent_n_faulty_tiles = n_faulty_tiles / (_config.BOARD_SHAPE[0]*_config.BOARD_SHAPE[1])
+        errors = np.array([data_errors[str(n)] for n in n_faulty_tiles])
+        means = np.mean(errors, axis=1)
+        stds = np.std(errors, axis=1)
 
+        #plot mean and std as filled area
+        color = palette[i]
+        plt.fill_between(percent_n_faulty_tiles, means-stds, means+stds, color=color, alpha=0.3)
+        plt.plot(percent_n_faulty_tiles, means, label=name, color=color)
+    
     plt.legend(loc='upper right')
-    plt.xlabel('Distance Error')
-    plt.ylabel('Frequency')
-    plt.title('Distance Error Histogram')
-    image_path = f'{_folders.VISUALIZATIONS_PATH}/Comparison.png'
+    plt.xlabel('Faulty Tiles')
+    plt.ylabel('Distance Error')
+    #plt.title('Distance Error Histogram')
+    
+    image_path = f'{_folders.VISUALIZATIONS_PATH}/NoiseTolerance_.png'
     plt.savefig(image_path, dpi=300, bbox_inches='tight')
 
 if __name__ == '__main__':
@@ -119,4 +126,4 @@ if __name__ == '__main__':
             model = _folders.load_model(name)        
             make_data(model, data, name)
     
-    make_plot(NAMES)
+    #make_plot(NAMES)
