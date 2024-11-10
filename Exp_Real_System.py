@@ -111,11 +111,27 @@ if __name__ == '__main__':
 
     NAMES = ['Calibrated','Uncalibrated']
 
+    LEN_DATA_BLOCK = 50
     for name in NAMES:
-        data_path = f"Dataset/TrainData/RealData_{name}.pkl"
+        data_path = f"Dataset/RealData_{name}.pkl"
         with open(data_path, 'rb') as f:
             data = pickle.load(f)
 
-        run_block(state_structure=state_structure, data=data, model_name= name, seed=None)
+        data_blocks_indexes = np.arange(0, len(data), LEN_DATA_BLOCK)
+        train_indexes = np.random.choice(data_blocks_indexes, int(len(data_blocks_indexes)*0.5), replace=False)
+        test_indexes = np.array([i for i in data_blocks_indexes if i not in train_indexes])
+        
+        train_indexes.sort()
+        test_indexes.sort()
+        
+        train_data = np.vstack([data[i:i+LEN_DATA_BLOCK] for i in train_indexes])
+        test_data = np.vstack([data[i:i+LEN_DATA_BLOCK] for i in test_indexes])
+        
+        with open(f"Dataset/TrainData_{name}.pkl", 'wb') as f:
+            pickle.dump(train_data, f)
+        with open(f"Dataset/TestData_{name}.pkl", 'wb') as f:
+            pickle.dump(test_data, f)
+
+        run_block(state_structure=state_structure, data=train_data, model_name= name, seed=None)
         for i in range(5):
-            some_visuals(name, data, i)
+            some_visuals(name, test_data, i)

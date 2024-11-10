@@ -41,7 +41,7 @@ def make_data(model, data:np.array, name:str):
     CMY = data[:,2]
     VALUES = np.vstack(data[:,-1])
     
-    RUNS = 500
+    RUNS = 1000
     
     errors = []
 
@@ -110,9 +110,9 @@ if __name__ == '__main__':
     
     NAMES = ['Calibrated','Uncalibrated']
     
-    if False:
+    if True:
         for name in NAMES:
-            data_path = f"Dataset/TrainData/RealData_{name}.pkl"
+            data_path = f"Dataset/TestData_{name}.pkl"
             with open(data_path, 'rb') as f:
                 data = pickle.load(f)
 
