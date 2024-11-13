@@ -43,21 +43,17 @@ def make_data(model, data:np.array, name:str):
     CMY = data[:,2]
     VALUES = np.vstack(data[:,-1])
     
-    N_FAULTS = _config.BOARD_SHAPE[0]*_config.BOARD_SHAPE[1]
-    FAULTS = np.arange(N_FAULTS+1)
+    NOISE_PERCENTS = np.arange(0, 101, 10)/100
     RUNS_PER_FAULT = 100
     
     errors = {}
 
-    for faulty in tqdm(FAULTS):
+    for noise in tqdm(NOISE_PERCENTS):
         values = np.copy(VALUES)
-        faulty_mask = np.ones_like(values)
-        for m in faulty_mask:
-            m[np.random.choice(np.arange(len(m)), faulty, replace=False)] = 0
-
-        values = values * faulty_mask
+        values = values + np.random.normal(0, 1, values.shape) * values * noise
+        
         errors_run = []
-        for i in range(RUNS_PER_FAULT):
+        for _ in range(RUNS_PER_FAULT):
             cmx, cmy, estimation_states = _run_model(CMX, CMY, values, model, state_structure, board)
             estimation = estimation_states.detach().cpu().numpy()
             estimation_x = estimation[0].flatten()
@@ -67,7 +63,7 @@ def make_data(model, data:np.array, name:str):
 
             distance_error = np.sqrt((cmx - mestx)**2 + (cmy - mesty)**2)
             errors_run.append(float(distance_error))
-        errors[str(faulty)] = errors_run
+        errors[str(noise)] = errors_run
     _folders.save_training_results({'errors': errors}, f'NoiseTolerance_{name}')
 
 def make_plot(names):
@@ -80,19 +76,18 @@ def make_plot(names):
             data = json.load(json_file)
         
         data_errors = data['errors']
-        n_faulty_tiles = np.array(list(data_errors.keys()), dtype=int)
-        percent_n_faulty_tiles = n_faulty_tiles / (_config.BOARD_SHAPE[0]*_config.BOARD_SHAPE[1])
-        errors = np.array([data_errors[str(n)] for n in n_faulty_tiles])
+        error_percent = np.array(list(data_errors.keys()), dtype=float)
+        errors = np.array([data_errors[str(n)] for n in error_percent])
         means = np.mean(errors, axis=1)
         stds = np.std(errors, axis=1)
 
         #plot mean and std as filled area
         color = palette[i]
-        plt.fill_between(percent_n_faulty_tiles, means-stds, means+stds, color=color, alpha=0.3)
-        plt.plot(percent_n_faulty_tiles, means, label=name, color=color)
+        plt.fill_between(error_percent*100, means-stds, means+stds, color=color, alpha=0.3)
+        plt.plot(error_percent*100, means, label=name, color=color)
     
     plt.legend(loc='upper right')
-    plt.xlabel('Faulty Tiles')
+    plt.xlabel('Error %')
     plt.ylabel('Distance Error')
     #plt.title('Distance Error Histogram')
     
@@ -117,7 +112,7 @@ if __name__ == '__main__':
     
     NAMES = ['Calibrated','Uncalibrated']
     
-    if True:
+    if False:
         for name in NAMES:
             data_path = f"Dataset/TestData_{name}.pkl"
             with open(data_path, 'rb') as f:
@@ -126,4 +121,4 @@ if __name__ == '__main__':
             model = _folders.load_model(name)        
             make_data(model, data, name)
     
-    #make_plot(NAMES)
+    make_plot(NAMES)
