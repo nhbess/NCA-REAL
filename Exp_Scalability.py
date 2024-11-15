@@ -146,8 +146,8 @@ def plot_scalability(model_name:str):
     #plor results in a line and std as fill_between
     plt.plot(boards, mean_errors, label='Mean Error')
     plt.fill_between(boards, mean_errors-std_errors, mean_errors+std_errors, alpha=0.2, label='Std Error')
-    plt.xlabel('Board Shape')
-    plt.ylabel('Mean Error')
+    plt.xlabel('Board Shape [NxN]')
+    plt.ylabel('Distance Error [Tiles]')
     plt.title('Scalability')
     #ticks to board shapes
     #plt.xticks(boards)

@@ -88,12 +88,12 @@ def make_plot(names):
 
         #plot mean and std as filled area
         color = palette[i]
-        plt.fill_between(percent_n_faulty_tiles, means-stds, means+stds, color=color, alpha=0.3)
-        plt.plot(percent_n_faulty_tiles, means, label=name, color=color)
+        plt.fill_between(percent_n_faulty_tiles*100, means-stds, means+stds, color=color, alpha=0.3)
+        plt.plot(percent_n_faulty_tiles*100, means, label=name, color=color)
     
     plt.legend(loc='upper right')
-    plt.xlabel('Faulty Tiles')
-    plt.ylabel('Distance Error')
+    plt.xlabel('Faulty Tiles [%]')
+    plt.ylabel('Distance Error [mm]')
     #plt.title('Distance Error Histogram')
     
     image_path = f'{_folders.VISUALIZATIONS_PATH}/Fault_Tolerance.png'

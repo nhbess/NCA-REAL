@@ -87,8 +87,8 @@ def make_plot(names):
         plt.plot(error_percent*100, means, label=name, color=color)
     
     plt.legend(loc='upper right')
-    plt.xlabel('Error %')
-    plt.ylabel('Distance Error')
+    plt.xlabel('Signal Noise [%]')
+    plt.ylabel('Distance Error [mm]')
     #plt.title('Distance Error Histogram')
     
     image_path = f'{_folders.VISUALIZATIONS_PATH}/NoiseTolerance_.png'
