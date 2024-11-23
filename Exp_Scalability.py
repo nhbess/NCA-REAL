@@ -19,6 +19,8 @@ from NCAs.Util import set_seed, moving_contact_masks, create_initial_states, cre
 from Environment.ContactBoard import ContactBoard
 from tqdm import tqdm
 
+import _colors
+
 def run_block(state_structure:StateStructure, model_name:str, seed = None):
     if seed is not None:
         set_seed(seed)
@@ -27,8 +29,6 @@ def run_block(state_structure:StateStructure, model_name:str, seed = None):
     trained_model = TrainingScalability().train_center_finder(model=model, state_structure=state_structure, experiment_name=model_name)
     _folders.save_model(trained_model=trained_model, model_name=model_name)
     logger.success(f"Model {model_name} trained and saved")
-
-
 
 def evaluate_scalability(state_structure:StateStructure, model_name:str, seed = None):
     if seed is not None:
@@ -143,15 +143,20 @@ def plot_scalability(model_name:str):
     std_errors = np.array([results[board][1] for board in boards])
     boards = boards.astype(int)
 
+    plt.figure(figsize=_colors.FIG_SIZE)
+
+    palette = _colors.create_palette(3)
+    color = palette[0]
+
     #plor results in a line and std as fill_between
-    plt.plot(boards, mean_errors, label='Mean Error')
-    plt.fill_between(boards, mean_errors-std_errors, mean_errors+std_errors, alpha=0.2, label='Std Error')
+    plt.plot(boards, mean_errors, label='Mean Error', color=color)
+    plt.fill_between(boards, mean_errors-std_errors, mean_errors+std_errors, alpha=0.2, label='Std Error', color=color)
     plt.xlabel('Board Shape [NxN]')
     plt.ylabel('Distance Error [Tiles]')
-    plt.title('Scalability')
+    #plt.title('Scalability')
     #ticks to board shapes
     #plt.xticks(boards)
-    plt.savefig(f'{_folders.VISUALIZATIONS_PATH}/{model_name}_results.png')
+    plt.savefig(f'{_folders.VISUALIZATIONS_PATH}/{model_name}_results.png', dpi=300, bbox_inches='tight')
     plt.close()
 
 if __name__ == '__main__':

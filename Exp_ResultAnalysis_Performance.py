@@ -61,6 +61,7 @@ def make_data(model, data:np.array, name:str):
 def make_plot(names):
     palette = _colors.create_palette(len(names))    
     all_errors = []
+    plt.figure(figsize=_colors.FIG_SIZE)
 
     # First pass: collect all errors to compute the common bin edges
     for name in names:
@@ -82,13 +83,19 @@ def make_plot(names):
         errors = data['errors']
         mean = np.round(np.mean(errors), 2)
         std = np.round(np.std(errors), 2)
-        label = f'NCA {name}, $\\mu$: {mean}, $\\sigma$: {std}'
-        plt.hist(errors, bins=bins, alpha=0.75, color=palette[i], label=label)
+        label = f'{name}\n$\\mu$: {mean}, $\\sigma$: {std}'
+        
+        # Calculate histogram data with density
+        counts, bin_edges = np.histogram(errors, bins=bins, density=True)
+        counts = counts * 100  # Convert to percentage
+        
+        # Plot histogram
+        plt.hist(bin_edges[:-1], bins=bin_edges, weights=counts, alpha=0.75, color=palette[i], label=label)
 
-    plt.legend(loc='upper right')
-    plt.xlabel('Distance Error')
-    plt.ylabel('Frequency')
-    plt.title('Distance Error Histogram')
+    plt.legend(loc='upper right', fontsize=10)
+    plt.xlabel('Distance Error [mm]')
+    plt.ylabel('Frequency [%]')
+    #plt.title('Distance Error Histogram')
     image_path = f'{_folders.VISUALIZATIONS_PATH}/Comparison.png'
     plt.savefig(image_path, dpi=300, bbox_inches='tight')
 
@@ -110,7 +117,7 @@ if __name__ == '__main__':
     
     NAMES = ['Calibrated','Uncalibrated']
     
-    if True:
+    if False:
         for name in NAMES:
             data_path = f"Dataset/TestData_{name}.pkl"
             with open(data_path, 'rb') as f:

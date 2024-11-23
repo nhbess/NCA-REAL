@@ -8,7 +8,10 @@ PALETTE = ["001427","708d81","f4d58d","bf0603","8d0801"] # this one
 #PALETTE = ["3d348b","7678ed","f7b801","f18701","f35b04"]
 #PALETTE = ["606c38","283618","fefae0","dda15e","bc6c25"]
 
-FIG_SIZE = (6, 3)
+golden_ratio = (1 + np.sqrt(5)) / 2
+X = 4
+Y = X / golden_ratio
+FIG_SIZE = (X, 2)
 
 
 def create_palette(number_of_colors: int, normalize=True):

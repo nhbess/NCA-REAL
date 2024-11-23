@@ -72,7 +72,7 @@ def make_data(model, data:np.array, name:str):
 
 def make_plot(names):
     palette = _colors.create_palette(len(names))    
-    
+    plt.figure(figsize=_colors.FIG_SIZE)
     # First pass: collect all errors to compute the common bin edges
     for i, name in enumerate(names):
         results_path = f'{_folders.RESULTS_PATH}/FaultTolerance_{name}'
@@ -91,7 +91,7 @@ def make_plot(names):
         plt.fill_between(percent_n_faulty_tiles*100, means-stds, means+stds, color=color, alpha=0.3)
         plt.plot(percent_n_faulty_tiles*100, means, label=name, color=color)
     
-    plt.legend(loc='upper right')
+    plt.legend(loc='upper left')
     plt.xlabel('Faulty Tiles [%]')
     plt.ylabel('Distance Error [mm]')
     #plt.title('Distance Error Histogram')
