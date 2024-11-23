@@ -92,6 +92,26 @@ def some_visuals(experiment_name:str, data:np.array, id:int = 0):
     visual_path = f'{_folders.VISUALIZATIONS_PATH}/{experiment_name}_{id}.gif'
     imageio.mimsave(visual_path, frames, fps=60)
 
+def _threshold_data(data:np.array, thresholds:float):
+    shapes = [d[0] for d in data]
+    values = [d[-1] for d in data]
+
+    unique_shapes = np.unique(shapes)
+    shape_values = {shape:[] for shape in unique_shapes}
+    
+    for d in data:
+        shape_values[d[0]].extend(d[-1])
+    
+    for s in unique_shapes:
+        vals = np.array(shape_values[s])
+        #vals = vals[vals > 0]
+        #plot histogram
+        plt.hist(vals, bins=100, alpha=0.5, label=f'{s}')
+    plt.legend()
+    plt.show()
+    return
+
+
 if __name__ == '__main__':
 
     experiment_name=f'Exp_RealSystem'
@@ -110,13 +130,19 @@ if __name__ == '__main__':
     
 
     NAMES = ['Calibrated','Uncalibrated']
+    THRESHOLDS = [[0],
+                  [0],]
 
     LEN_DATA_BLOCK = 50
+
     for name in NAMES:
         data_path = f"Dataset/RealData_{name}.pkl"
         with open(data_path, 'rb') as f:
             data = pickle.load(f)
 
+        _threshold_data(data, 1)
+        sys.exit()
+        
         data_blocks_indexes = np.arange(0, len(data), LEN_DATA_BLOCK)
         train_indexes = np.random.choice(data_blocks_indexes, int(len(data_blocks_indexes)*0.5), replace=False)
         test_indexes = np.array([i for i in data_blocks_indexes if i not in train_indexes])
@@ -132,6 +158,7 @@ if __name__ == '__main__':
         with open(f"Dataset/TestData_{name}.pkl", 'wb') as f:
             pickle.dump(test_data, f)
 
+        sys.exit()
         run_block(state_structure=state_structure, data=train_data, model_name= name, seed=None)
         for i in range(5):
             some_visuals(name, test_data, i)
