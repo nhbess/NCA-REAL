@@ -60,7 +60,7 @@ def explore_data_path(data_path, chosen_directory, which_data, name):
     with open(output_path, 'wb') as f:
         pickle.dump(data, f)
 
-def threshold_data(data, threshold):
+def data_distribution(data, threshold):
     new_data = []
     print(data[0])
     for d in data:
@@ -81,20 +81,88 @@ def threshold_data(data, threshold):
 
     print(new_data[0])
     return new_data
+    
+def data_distribution(data:np.array):
+    import matplotlib.pyplot as plt
+    total_weights = {
+        'A': 150,
+        'B': 500,
+        'H': 100, 
+        'J': 72, 
+        'L': 72, 
+        'S': 72, 
+        'T': 72, 
+        'X': 72, 
+        'Z': 72,
+    }
+
+    areas = {
+        'A': 1.963,
+        'B': 5.184,
+        'H': 0.0005,
+        'J': 0.0005,
+        'L': 0.0005,
+        'S': 0.0005,
+        'T': 0.0005,
+        'X': 0.0005,
+        'Z': 0.0005,
+    }
+
+    sum_weights = {
+        'A': 0,
+        'B': 0,
+        'H': 0, 
+        'J': 0, 
+        'L': 0, 
+        'S': 0, 
+        'T': 0, 
+        'X': 0, 
+        'Z': 0,
+    }
+
+    shapes = [d[0] for d in data]
+    values = [d[-1] for d in data]
+    unique_shapes = np.unique(shapes)
+    print(unique_shapes)
+
+    for d in data:
+        sum_weights[d[0]] += np.sum(d[-1])
+    
+    print(sum_weights)
+    shape_values = {shape:[] for shape in unique_shapes}
+    
+    for d in data:
+        shape_values[d[0]].extend(d[-1])
+    
+    #sort unique_shapes by sum_weights
+    unique_shapes = sorted(unique_shapes, key=lambda x: sum_weights[x])
+    #reverse the order
+    unique_shapes = unique_shapes[::-1]
+    for s in unique_shapes:
+        vals = np.array(shape_values[s])
+        plt.hist(vals, bins=100, alpha=0.5, label=f'{s}')
+    plt.legend()
+    plt.show()
+    return
 
 if __name__ == '__main__':
     data_path = 'Dataset'
     
-    if True:
+    if False:
         chosen_directory = 'Threshold0g'
         which_datas = ['calibrated_sensor_data_all_recordings','uncalibrated_sensor_data']
         names = ['Calibrated', 'Uncalibrated']
         for which_data, name in zip(which_datas, names):
             explore_data_path(data_path, chosen_directory, which_data, name)
     
+    if False:
+        data = pickle.load(open(f'{data_path}/RealData_Calibrated.pkl', 'rb'))
+        THRESHOLDS = [0, 25, 40]
+        for threshold in THRESHOLDS:
+            tdata = data_distribution(data, threshold)
+            with open(f'{data_path}/RealData_Calibrated_{threshold}g.pkl', 'wb') as f:
+                pickle.dump(tdata, f)
+
     data = pickle.load(open(f'{data_path}/RealData_Calibrated.pkl', 'rb'))
-    THRESHOLDS = [0, 25, 40]
-    for threshold in THRESHOLDS:
-        tdata = threshold_data(data, threshold)
-        with open(f'{data_path}/RealData_Calibrated_{threshold}g.pkl', 'wb') as f:
-            pickle.dump(tdata, f)
+    data_distribution(data)
+    
