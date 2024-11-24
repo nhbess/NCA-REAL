@@ -129,20 +129,21 @@ if __name__ == '__main__':
                         hidden_dim      = 10)
     
 
-    NAMES = ['Calibrated','Uncalibrated']
-    THRESHOLDS = [[0],
-                  [0],]
-
+    NAMES = ['Calibrated',
+             'Uncalibrated',
+             'Calibrated_0g',
+             'Calibrated_25g',
+             'Calibrated_40g',]
+    
     LEN_DATA_BLOCK = 50
 
     for name in NAMES:
         data_path = f"Dataset/RealData_{name}.pkl"
         with open(data_path, 'rb') as f:
             data = pickle.load(f)
-
-        _threshold_data(data, 1)
-        sys.exit()
         
+        _threshold_data(data, 0)
+        sys.exit()
         data_blocks_indexes = np.arange(0, len(data), LEN_DATA_BLOCK)
         train_indexes = np.random.choice(data_blocks_indexes, int(len(data_blocks_indexes)*0.5), replace=False)
         test_indexes = np.array([i for i in data_blocks_indexes if i not in train_indexes])
@@ -151,6 +152,10 @@ if __name__ == '__main__':
         test_indexes.sort()
         
         train_data = np.vstack([data[i:i+LEN_DATA_BLOCK] for i in train_indexes])
+        print(name)
+        print(train_data)
+        print(train_data.shape)
+
         test_data = np.vstack([data[i:i+LEN_DATA_BLOCK] for i in test_indexes])
         
         with open(f"Dataset/TrainData_{name}.pkl", 'wb') as f:
@@ -158,7 +163,8 @@ if __name__ == '__main__':
         with open(f"Dataset/TestData_{name}.pkl", 'wb') as f:
             pickle.dump(test_data, f)
 
-        sys.exit()
         run_block(state_structure=state_structure, data=train_data, model_name= name, seed=None)
-        for i in range(5):
-            some_visuals(name, test_data, i)
+
+        if True:
+            for i in range(5):
+                some_visuals(name, test_data, i)

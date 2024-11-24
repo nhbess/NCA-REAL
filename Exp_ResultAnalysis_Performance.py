@@ -115,9 +115,13 @@ if __name__ == '__main__':
                         sensor_dim      = 1,   
                         hidden_dim      = 10)
     
-    NAMES = ['Calibrated','Uncalibrated']
+    NAMES = ['Calibrated',
+             'Uncalibrated',
+             'Calibrated_0g',
+             'Calibrated_25g',
+             'Calibrated_40g',]
     
-    if False:
+    if True:
         for name in NAMES:
             data_path = f"Dataset/TestData_{name}.pkl"
             with open(data_path, 'rb') as f:

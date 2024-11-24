@@ -60,15 +60,41 @@ def explore_data_path(data_path, chosen_directory, which_data, name):
     with open(output_path, 'wb') as f:
         pickle.dump(data, f)
 
+def threshold_data(data, threshold):
+    new_data = []
+    print(data[0])
+    for d in data:
+        # Copy the original data structure
+        modified_entry = d.copy()
+        
+        # Access the last element (list of values)
+        values = np.array(modified_entry[3])  # Convert to NumPy array for processing
+        
+        # Apply thresholding: replace values below the threshold with 0
+        modified_values = np.where(values > threshold, 1, 0)
+        
+        # Update the modified entry
+        modified_entry[3] = modified_values.tolist()
+        
+        # Append the modified entry to the new data list
+        new_data.append(modified_entry)
+
+    print(new_data[0])
+    return new_data
+
 if __name__ == '__main__':
     data_path = 'Dataset'
-    chosen_directory = 'Threshold0g'
-    which_datas = ['calibrated_sensor_data_all_recordings','uncalibrated_sensor_data']
-    names = ['Calibrated', 'Uncalibrated']
-    for which_data, name in zip(which_datas, names):
-        explore_data_path(data_path, chosen_directory, which_data, name)
     
-    #load the data
+    if True:
+        chosen_directory = 'Threshold0g'
+        which_datas = ['calibrated_sensor_data_all_recordings','uncalibrated_sensor_data']
+        names = ['Calibrated', 'Uncalibrated']
+        for which_data, name in zip(which_datas, names):
+            explore_data_path(data_path, chosen_directory, which_data, name)
+    
     data = pickle.load(open(f'{data_path}/RealData_Calibrated.pkl', 'rb'))
-    print(data)
-    print(data.shape)
+    THRESHOLDS = [0, 25, 40]
+    for threshold in THRESHOLDS:
+        tdata = threshold_data(data, threshold)
+        with open(f'{data_path}/RealData_Calibrated_{threshold}g.pkl', 'wb') as f:
+            pickle.dump(tdata, f)
