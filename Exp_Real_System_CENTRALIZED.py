@@ -32,7 +32,7 @@ if __name__ == '__main__':
     _folders.set_experiment_folders(experiment_name)
     _config.set_parameters({
         'BOARD_SHAPE' :     [4,4],
-        'TRAINING_STEPS' :  5000,
+        'TRAINING_STEPS' :  10000,
         'BATCH_SIZE' :      10,
     })
  
@@ -50,6 +50,6 @@ if __name__ == '__main__':
 
         run_block(data=train_data, model_name= f'{name}_Centralized', seed=None)
 
-        if True:
-            for i in range(5):
-                some_visuals(name, test_data, i)
+        model = _folders.load_model(f'{name}_Centralized')
+
+    
