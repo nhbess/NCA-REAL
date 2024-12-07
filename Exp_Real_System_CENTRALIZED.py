@@ -12,19 +12,17 @@ import numpy as np
 from loguru import logger
 import _config
 import _folders
-from NCAs.NCA import NCA_CenterFinder
-from NCAs.NCA_REAL import NCA_REAL
-from NCAs.StateStructure import StateStructure
-from NCAs.TrainingRealData import TrainerRealData
+from NCAs.NCA_REAL_CENTRALIZED import NCA_REAL_CENT
+from NCAs.TrainingRealCentralized import TrainerRealData
 from NCAs.Util import set_seed, create_initial_states_real_data
 from Environment.ContactBoard import ContactBoard
 
-def run_block(state_structure:StateStructure, data:np.array, model_name:str, seed = None):
+def run_block(data:np.array, model_name:str, seed = None):
     if seed is not None:
         set_seed(seed)
 
-    model = NCA_REAL(state_structure=state_structure)
-    trained_model = TrainerRealData(data).train_center_finder(model=model, state_structure=state_structure, experiment_name=model_name)
+    model = NCA_REAL_CENT()
+    trained_model = TrainerRealData(data).train_center_finder(model=model, experiment_name=model_name)
     _folders.save_model(trained_model=trained_model, model_name=model_name)
     logger.success(f"Model {model_name} trained and saved")
 
@@ -94,7 +92,6 @@ def some_visuals(experiment_name:str, data:np.array, id:int = 0):
 
 
 if __name__ == '__main__':
-
     experiment_name=f'Exp_RealSystem'
     _folders.set_experiment_folders(experiment_name)
     _config.set_parameters({
@@ -102,44 +99,20 @@ if __name__ == '__main__':
         'TRAINING_STEPS' :  5000,
         'BATCH_SIZE' :      10,
     })
-
-    state_structure = StateStructure(
-                        estimation_dim  = 2,    
-                        constant_dim    = 2,   
-                        sensor_dim      = 1,   
-                        hidden_dim      = 10)
-    
-
+ 
     NAMES = ['Calibrated',
              'Uncalibrated',]
     
     LEN_DATA_BLOCK = 50
 
     for name in NAMES:
-        data_path = f"Dataset/RealData_{name}.pkl"
-        with open(data_path, 'rb') as f:
-            data = pickle.load(f)
-        
-        data_blocks_indexes = np.arange(0, len(data), LEN_DATA_BLOCK)
-        train_indexes = np.random.choice(data_blocks_indexes, int(len(data_blocks_indexes)*0.5), replace=False)
-        test_indexes = np.array([i for i in data_blocks_indexes if i not in train_indexes])
-        
-        train_indexes.sort()
-        test_indexes.sort()
-        
-        train_data = np.vstack([data[i:i+LEN_DATA_BLOCK] for i in train_indexes])
-        print(name)
-        print(train_data)
-        print(train_data.shape)
+        train_data_path = f"Dataset/TrainData_{name}.pkl"
+        test_data_path = f"Dataset/TestData_{name}.pkl"
 
-        test_data = np.vstack([data[i:i+LEN_DATA_BLOCK] for i in test_indexes])
-        
-        with open(f"Dataset/TrainData_{name}.pkl", 'wb') as f:
-            pickle.dump(train_data, f)
-        with open(f"Dataset/TestData_{name}.pkl", 'wb') as f:
-            pickle.dump(test_data, f)
+        train_data = pickle.load(open(train_data_path, 'rb'))
+        test_data = pickle.load(open(test_data_path, 'rb'))
 
-        run_block(state_structure=state_structure, data=train_data, model_name= name, seed=None)
+        run_block(data=train_data, model_name= name, seed=None)
 
         if True:
             for i in range(5):

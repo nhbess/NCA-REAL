@@ -14,10 +14,8 @@ import _colors
 import _config
 import _folders
 from Environment.ContactBoard import ContactBoard
-from NCAs.NCA import NCA_CenterFinder
 from NCAs.NCA_REAL import NCA_REAL
 from NCAs.StateStructure import StateStructure
-from NCAs.TrainingRealData import TrainerRealData
 from NCAs.Util import create_initial_states_real_data, set_seed
 
 
