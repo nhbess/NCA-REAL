@@ -32,7 +32,7 @@ if __name__ == '__main__':
     _folders.set_experiment_folders(experiment_name)
     _config.set_parameters({
         'BOARD_SHAPE' :     [4,4],
-        'TRAINING_STEPS' :  10000,
+        'TRAINING_STEPS' :  5000,
         'BATCH_SIZE' :      10,
     })
  

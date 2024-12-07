@@ -32,14 +32,53 @@ def _run_model(CMX:np.array, CMY:np.array, VALUES:np.array, model:NCA_REAL, stat
     estimation_states = output_states[...,state_structure.estimation_channels, :, :]
     return cmx, cmy, estimation_states
 
+
+def _run_model_centralized(CMX:np.array, CMY:np.array, VALUES:np.array, model:NCA_REAL):
+    idx = np.random.randint(0, len(VALUES))
+    cmx = CMX[idx]
+    cmy = CMY[idx]
+    values = torch.from_numpy(VALUES[idx]).unsqueeze(0).float()
+
+    output_states:torch.Tensor = model(values)
+    return cmx, cmy, output_states
+
+
 def make_data(model, data:np.array, name:str):
+    if 'Centralized' in name:
+        make_data_Centralized(model, data, name)
+    else:
+        make_data_NCA(model, data, name)
+    pass
+
+def make_data_Centralized(model, data:np.array, name:str):
+    CMX = data[:,1]
+    CMY = data[:,2]
+    VALUES = np.vstack(data[:,-1])
+    
+    errors = []
+
+    for i in range(RUNS): 
+        cmx, cmy, estimation_states = _run_model_centralized(CMX, CMY, VALUES, model)
+        estimation_states = estimation_states.squeeze(0).detach().cpu().numpy()
+        estimation_x = estimation_states[0]
+        estimation_y = estimation_states[0]
+        mestx = np.mean(estimation_x)
+        mesty = np.mean(estimation_y)
+
+        distance_error = np.sqrt((cmx - mestx)**2 + (cmy - mesty)**2)
+        errors.append(float(distance_error))
+
+    _folders.save_training_results({'errors': errors}, f'Evaluation_{name}')
+
+
+def make_data_NCA(model, data:np.array, name:str):
     
     board = ContactBoard(board_shape=_config.BOARD_SHAPE, tile_size=_config.TILE_SIZE, center=(0,0))
     CMX = data[:,1]
     CMY = data[:,2]
     VALUES = np.vstack(data[:,-1])
     
-    RUNS = 1000
+
     
     errors = []
 
@@ -59,7 +98,7 @@ def make_data(model, data:np.array, name:str):
 def make_plot(names):
     palette = _colors.create_palette(len(names))    
     all_errors = []
-    plt.figure(figsize=_colors.FIG_SIZE)
+    plt.figure(figsize=np.array(_colors.FIG_SIZE))
 
     # First pass: collect all errors to compute the common bin edges
     for name in names:
@@ -113,19 +152,27 @@ if __name__ == '__main__':
                         sensor_dim      = 1,   
                         hidden_dim      = 10)
     
-    NAMES = ['Calibrated',
-             'Uncalibrated',
-             'Calibrated_0g',
-             'Calibrated_25g',
-             'Calibrated_40g',]
+    MODEL_NAMES = [ 'Calibrated',
+                    'Uncalibrated',
+                    'Calibrated_Centralized',
+                    'Uncalibrated_Centralized',
+                    ]
+    
+    DATA_NAMES = [  'Calibrated',
+                    'Uncalibrated',
+                    'Calibrated',
+                    'Uncalibrated',
+]
+    
+    RUNS = 1000
     
     if True:
-        for name in NAMES:
-            data_path = f"Dataset/TestData_{name}.pkl"
+        for model_name, data_name in zip(MODEL_NAMES, DATA_NAMES):
+            data_path = f"Dataset/TestData_{data_name}.pkl"
             with open(data_path, 'rb') as f:
                 data = pickle.load(f)
 
-            model = _folders.load_model(name)        
-            make_data(model, data, name)
+            model = _folders.load_model(model_name)        
+            make_data(model, data, model_name)
     
-    make_plot(NAMES)
+    make_plot(MODEL_NAMES)

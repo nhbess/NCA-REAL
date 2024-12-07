@@ -141,6 +141,6 @@ if __name__ == '__main__':
 
         run_block(state_structure=state_structure, data=train_data, model_name= name, seed=None)
 
-        if True:
+        if False:
             for i in range(5):
                 some_visuals(name, test_data, i)
