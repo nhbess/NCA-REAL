@@ -36,36 +36,30 @@ class TrainerRealData:
         logger.info(f"Training for {_config.TRAINING_STEPS} epochs")
         self.rh.set_training_start()
 
-        CMX = self.data[:, 1]
-        CMY = self.data[:, 2]
-        VALUES = np.vstack(self.data[:, -1]) # shape: [N, H*W]
-
-        H, W = _config.BOARD_SHAPE
+        # Convert all data to float32 upfront to avoid object types.
+        CMX = self.data[:, 1].astype(np.float32)
+        CMY = self.data[:, 2].astype(np.float32)
+        VALUES = np.vstack(self.data[:, -1]).astype(np.float32)  # shape: [N, input_dim]
 
         for step in tqdm(range(_config.TRAINING_STEPS)):
             # Select a batch of data points
             batch_indexes = np.random.randint(0, len(self.data), size=_config.BATCH_SIZE)
 
-            # Extract input values and reshape to [B, 1, H, W]
-            input_values = VALUES[batch_indexes] # shape: [B, H*W]
-            input_values = input_values.reshape(_config.BATCH_SIZE, 1, H, W)
-            input_states = torch.from_numpy(input_values).float().to(device)
+            # Extract input values: shape [B, input_dim]
+            input_values = VALUES[batch_indexes]
+            input_states = torch.from_numpy(input_values).to(device)  # already float32
 
-            # Extract targets
             cmx = CMX[batch_indexes]
             cmy = CMY[batch_indexes]
 
-            # Forward pass
             out = model(input_states)  # out: [B, 2]
 
-            # Create target tensor [B, 2]
-            cmx_tensor = torch.from_numpy(cmx).float().to(device)
-            cmy_tensor = torch.from_numpy(cmy).float().to(device)
+            cmx_tensor = torch.from_numpy(cmx).to(device)
+            cmy_tensor = torch.from_numpy(cmy).to(device)
             target = torch.stack([cmx_tensor, cmy_tensor], dim=1)  # [B, 2]
 
-            # Calculate loss
             loss = F.mse_loss(out, target)
-            
+
             loss.backward()
             self._normalize_grads(model)
             optimizer.step()
