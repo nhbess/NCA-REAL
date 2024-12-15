@@ -89,8 +89,8 @@ def make_plot(names):
         plt.fill_between(percent_n_faulty_tiles*100, means-stds, means+stds, color=color, alpha=0.3)
         plt.plot(percent_n_faulty_tiles*100, means, label=name, color=color)
     #plt.axhline(_config.TILE_SIZE/2, color='black', linestyle='--', linewidth=1, label='Distance between sensors')
-    plt.legend(loc='upper left', fontsize=8)
-    plt.xlabel('Faulty Tiles [%]')
+    plt.legend(loc='upper left')
+    plt.xlabel('Faulty Agents [%]')
     plt.ylabel('Distance Error [mm]')
     #plt.title('Distance Error Histogram')
     

@@ -154,19 +154,19 @@ if __name__ == '__main__':
     
     MODEL_NAMES = [ 'Calibrated',
                     'Uncalibrated',
-                    'Calibrated_Centralized',
-                    'Uncalibrated_Centralized',
+                    #'Calibrated_Centralized',
+                    #'Uncalibrated_Centralized',
                     ]
     
     DATA_NAMES = [  'Calibrated',
                     'Uncalibrated',
-                    'Calibrated',
-                    'Uncalibrated',
+                    #'Calibrated',
+                    #'Uncalibrated',
 ]
     
     RUNS = 1000
     
-    if True:
+    if False:
         for model_name, data_name in zip(MODEL_NAMES, DATA_NAMES):
             data_path = f"Dataset/TestData_{data_name}.pkl"
             with open(data_path, 'rb') as f:

@@ -135,6 +135,7 @@ def some_visuals(model_name:str, board_shape:int, id:int = 0):
     imageio.mimsave(visual_path, frames, fps=60)
 
 def plot_scalability(model_name:str):
+    print(f'Plotting {model_name} results')
     with open(f'{_folders.RESULTS_PATH}/{model_name}_results.json', 'rb') as f:
         results = json.load(f)
 
