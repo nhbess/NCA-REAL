@@ -61,7 +61,7 @@ def make_data_Centralized(model, data:np.array, name:str):
         cmx, cmy, estimation_states = _run_model_centralized(CMX, CMY, VALUES, model)
         estimation_states = estimation_states.squeeze(0).detach().cpu().numpy()
         estimation_x = estimation_states[0]
-        estimation_y = estimation_states[0]
+        estimation_y = estimation_states[1]
         mestx = np.mean(estimation_x)
         mesty = np.mean(estimation_y)
 
@@ -95,7 +95,7 @@ def make_data_NCA(model, data:np.array, name:str):
 
     _folders.save_training_results({'errors': errors}, f'Evaluation_{name}')
 
-def make_plot(names):
+def make_plot_comparison_calibration(names):
     palette = _colors.create_palette(len(names))    
     all_errors = []
     plt.figure(figsize=np.array(_colors.FIG_SIZE))
@@ -136,6 +136,91 @@ def make_plot(names):
     image_path = f'{_folders.VISUALIZATIONS_PATH}/Comparison.png'
     plt.savefig(image_path, dpi=300, bbox_inches='tight')
 
+
+def make_plot_comparison_centralized(names):
+    palette = _colors.create_palette(len(names))    
+    all_errors = []
+
+    error_filter = np.inf
+    # Create figure with two subplots sharing the x-axis
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=np.array(_colors.FIG_SIZE))
+
+    # First pass: collect all errors to compute the common bin edges
+    for name in names:
+        results_path = f'{_folders.RESULTS_PATH}/Evaluation_{name}'
+        with open(f'{results_path}.json', 'r') as json_file:
+            data = json.load(json_file)
+        all_errors.extend(data['errors'])
+
+    all_errors = [error for error in all_errors if error < error_filter]
+    # Define bin edges based on the global range of errors
+    min_error = np.min(all_errors)
+    max_error = np.max(all_errors)
+    bins = np.linspace(min_error, max_error, 21)
+
+    # Second pass: plot each histogram with the same bins
+    for i, name in enumerate(names):
+        results_path = f'{_folders.RESULTS_PATH}/Evaluation_{name}'
+        with open(f'{results_path}.json', 'r') as json_file:
+            data = json.load(json_file)
+        errors = data['errors']
+        #filter errors lower than 75
+        errors = [error for error in errors if error < error_filter]
+        mean = np.round(np.mean(errors), 2)
+        std = np.round(np.std(errors), 2)
+        model_name = name.replace('_',' ').replace('Centralized','Cent.')
+        label = f'{model_name}\n$\\mu$: {mean}, $\\sigma$: {std}'
+
+        # Calculate histogram data with density
+        counts, bin_edges = np.histogram(errors, bins=bins, density=True)
+        counts = counts * 100  # Convert to percentage
+
+        # Determine which subplot to use
+        ax = axs[0] if i < 2 else axs[1]
+
+        # Plot histogram
+        ax.hist(bin_edges[:-1], bins=bin_edges, weights=counts, alpha=0.75, color=palette[i], label=label)
+
+    # Set labels and legends
+    axs[0].set_ylabel('Freq. [%]')
+    axs[1].set_xlabel('Distance Error [mm]')
+    axs[1].set_ylabel('Freq. [%]')
+    axs[0].legend(loc='upper right', fontsize=8)
+    axs[1].legend(loc='upper right', fontsize=8)
+
+    image_path = f'{_folders.VISUALIZATIONS_PATH}/Comparison_Centralized.png'
+    fig.savefig(image_path, dpi=300, bbox_inches='tight')
+
+def make_plot_comparison_centralized(names):
+    palette = _colors.create_palette(len(names))    
+    all_data = []
+    plt.figure(figsize=np.array(_colors.FIG_SIZE))
+
+    # Read all errors for each model and store them
+    for name in names:
+        results_path = f'{_folders.RESULTS_PATH}/Evaluation_{name}'
+        with open(f'{results_path}.json', 'r') as json_file:
+            data = json.load(json_file)
+        errors = data['errors']
+        all_data.append(errors)
+
+    # Plot the data as a boxplot
+    model_labels = [name.replace('_',' ').replace('Centralized','Cent.').replace('Calibrated','Cal.').replace('Uncalibrated','Unc.') for name in names]
+    bp = plt.boxplot(all_data, labels=model_labels, showfliers=False, patch_artist=True)
+
+    #set fill color
+    for i, box in enumerate(bp['boxes']):
+        box.set(facecolor=palette[i])
+
+    plt.xlabel('Models')
+    plt.ylabel('Distance Error [mm]')
+
+    
+
+    image_path = f'{_folders.VISUALIZATIONS_PATH}/Comparison_Centralized.png'
+    plt.savefig(image_path, dpi=300, bbox_inches='tight')
+
+
 if __name__ == '__main__':
 
     experiment_name=f'Exp_RealSystem'
@@ -154,15 +239,11 @@ if __name__ == '__main__':
     
     MODEL_NAMES = [ 'Calibrated',
                     'Uncalibrated',
-                    #'Calibrated_Centralized',
-                    #'Uncalibrated_Centralized',
                     ]
     
     DATA_NAMES = [  'Calibrated',
                     'Uncalibrated',
-                    #'Calibrated',
-                    #'Uncalibrated',
-]
+                    ]   
     
     RUNS = 1000
     
@@ -175,4 +256,11 @@ if __name__ == '__main__':
             model = _folders.load_model(model_name)        
             make_data(model, data, model_name)
     
-    make_plot(MODEL_NAMES)
+    make_plot_comparison_calibration(MODEL_NAMES)
+    
+    MODEL_NAMES = [ 'Calibrated',
+                    'Calibrated_Centralized',
+                    'Uncalibrated',
+                    'Uncalibrated_Centralized'
+                    ]
+    make_plot_comparison_centralized(MODEL_NAMES)

@@ -23,6 +23,9 @@ def run_block(data:np.array, model_name:str, seed = None):
 
     model = NCA_REAL_CENT()
     trained_model = TrainerRealData(data).train_center_finder(model=model, experiment_name=model_name)
+
+
+
     _folders.save_model(trained_model=trained_model, model_name=model_name)
     logger.success(f"Model {model_name} trained and saved")
 
@@ -37,9 +40,8 @@ if __name__ == '__main__':
     })
  
     NAMES = ['Calibrated',
-             'Uncalibrated',]
-    
-    LEN_DATA_BLOCK = 50
+             'Uncalibrated',
+             ]
 
     for name in NAMES:
         train_data_path = f"Dataset/TrainData_{name}.pkl"
@@ -52,4 +54,20 @@ if __name__ == '__main__':
 
         model = _folders.load_model(f'{name}_Centralized')
 
-    
+        # Test the model
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model = model.to(device)
+        model.eval()
+
+        # Convert all data to float32 upfront to avoid object types.
+        CMX = test_data[:, 1].astype(np.float32)
+        CMY = test_data[:, 2].astype(np.float32)
+        VALUES = np.vstack(test_data[:, -1]).astype(np.float32)
+
+        input_states = torch.from_numpy(VALUES).to(device)
+        out = model(input_states)
+        out = out.cpu().detach().numpy()
+
+        # Calculate the error
+        error = np.sqrt(np.mean((out - np.vstack([CMX, CMY]).T)))
+        print(f"Model {name} has an error of {error}")
