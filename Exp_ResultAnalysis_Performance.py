@@ -210,13 +210,13 @@ def make_plot_comparison_centralized(names):
     model_labels = long_names
     bp = plt.boxplot(all_data, labels=model_labels, showfliers=False, patch_artist=True)
 
-    for i, name in enumerate(names):
-        errors = all_data[i]
-        mean = np.mean(errors)
-        std = np.std(errors)
-        vertical_offset = 10  # increase this to move the text higher
-        plt.text(i+1, mean+vertical_offset, f'{mean:.2f}', ha='center', va='bottom', color='black')
-        plt.text(i+1, mean+vertical_offset, f'±{std:.2f}', ha='center', va='top', color='black')
+    #for i, name in enumerate(names):
+    #    errors = all_data[i]
+    #    mean = np.mean(errors)
+    #    std = np.std(errors)
+    #    vertical_offset = 10  # increase this to move the text higher
+    #    plt.text(i+1, mean+vertical_offset, f'{mean:.2f}', ha='center', va='bottom', color='black')
+    #    plt.text(i+1, mean+vertical_offset, f'±{std:.2f}', ha='center', va='top', color='black')
 
     #set fill color
     for i, box in enumerate(bp['boxes']):
