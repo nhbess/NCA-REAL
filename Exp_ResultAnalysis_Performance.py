@@ -192,6 +192,7 @@ def make_plot_comparison_centralized(names):
     fig.savefig(image_path, dpi=300, bbox_inches='tight')
 
 def make_plot_comparison_centralized(names):
+    long_names = ['NCA Cal.', 'CNN Cal.', 'NCA Uncal.', 'CNN Uncal.']
     palette = _colors.create_palette(len(names))    
     all_data = []
     plt.figure(figsize=np.array(_colors.FIG_SIZE))
@@ -206,11 +207,23 @@ def make_plot_comparison_centralized(names):
 
     # Plot the data as a boxplot
     model_labels = [name.replace('_',' ').replace('Centralized','Cent.').replace('Calibrated','Cal.').replace('Uncalibrated','Unc.') for name in names]
+    model_labels = long_names
     bp = plt.boxplot(all_data, labels=model_labels, showfliers=False, patch_artist=True)
+
+    for i, name in enumerate(names):
+        errors = all_data[i]
+        mean = np.mean(errors)
+        std = np.std(errors)
+        vertical_offset = 10  # increase this to move the text higher
+        plt.text(i+1, mean+vertical_offset, f'{mean:.2f}', ha='center', va='bottom', color='black')
+        plt.text(i+1, mean+vertical_offset, f'±{std:.2f}', ha='center', va='top', color='black')
 
     #set fill color
     for i, box in enumerate(bp['boxes']):
         box.set(facecolor=palette[i])
+        #lines in grey
+        for element in ['whiskers', 'fliers', 'means', 'medians', 'caps']:
+            plt.setp(bp[element], color='grey')
 
     plt.xlabel('Models')
     plt.ylabel('Distance Error [mm]')
